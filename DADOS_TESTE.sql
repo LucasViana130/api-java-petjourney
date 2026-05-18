@@ -30,7 +30,7 @@ INSERT INTO TB_PET (name, species, breed, sex, birth_date, weight, tutor_id) VAL
 INSERT INTO TB_PET (name, species, breed, sex, birth_date, weight, tutor_id) VALUES 
 ('Thor', 'CACHORRO', 'Bulldog Francês', 'MACHO', '2022-01-10', 12.8, 2);
 
--- 5. Inserir Prontuários (TBCONSULTA)
+-- 5. Inserir Prontuários (TBPRONTUARIO)
 INSERT INTO TB_PRONTUARIO (registration_date, main_complaint, diagnosis, conduct, observations, pet_id, veterinarian_id) VALUES 
 ('2023-10-01 10:00:00', 'Vômitos e diarreia', 'Gastroenterite leve', 'Dieta leve e hidratação', 'Animal um pouco desidratado', 1, 1),
 ('2023-11-15 14:30:00', 'Coceira intensa nas orelhas', 'Otite bacteriana', 'Limpeza e antibiótico local', 'Ouvido direito mais inflamado', 3, 3);
