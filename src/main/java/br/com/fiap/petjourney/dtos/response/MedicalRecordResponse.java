@@ -20,8 +20,13 @@ public class MedicalRecordResponse extends RepresentationModel<MedicalRecordResp
     private String diagnosis;
     private String conduct;
     private String observations;
+    private String clinicalNotes;
+    private String recommendations;
+    private String prescriptionNotes;
+    private Long appointmentId;
     private String petName;
     private String veterinarianName;
+    private String clinicName;
 
     public static MedicalRecordResponse fromEntity(MedicalRecord record) {
         return MedicalRecordResponse.builder()
@@ -31,8 +36,13 @@ public class MedicalRecordResponse extends RepresentationModel<MedicalRecordResp
                 .diagnosis(record.getDiagnosis())
                 .conduct(record.getConduct())
                 .observations(record.getObservations())
+                .clinicalNotes(record.getClinicalNotes())
+                .recommendations(record.getRecommendations())
+                .prescriptionNotes(record.getPrescriptionNotes())
+                .appointmentId(record.getAppointment() != null ? record.getAppointment().getId() : null)
                 .petName(record.getPet() != null ? record.getPet().getName() : null)
                 .veterinarianName(record.getVeterinarian() != null ? record.getVeterinarian().getName() : null)
+                .clinicName(record.getVeterinarian() != null && record.getVeterinarian().getClinic() != null ? record.getVeterinarian().getClinic().getName() : null)
                 .build();
     }
 }

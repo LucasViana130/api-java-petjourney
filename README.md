@@ -1,225 +1,97 @@
-# 🐾 PetJourney API - Módulo Clínico
+# PetJourney
 
-[![Java](https://img.shields.io/badge/Java-17-blue.svg)](https://adoptium.net/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.0-brightgreen.svg)](https://spring.io/projects/spring-boot)
-[![H2 Database](https://img.shields.io/badge/H2-Database-blue.svg)](https://www.h2database.com/)
-[![Swagger](https://img.shields.io/badge/Swagger-OpenAPI-85EA2D.svg)](https://swagger.io/)
+## Configuracao local
 
-```markdown
-## 👥 Equipe
+Por padrao, o projeto espera PostgreSQL em `localhost:5433` com banco `petjourney`, usuario `postgres` e senha `postgres`.
 
-| Nome | RM |
-|------|------|
-| Lucas Viana | 563254 |
-| Deryk de Souza | 563412 |
-| Vinicius Paschoeto | 563089 |
+Para usar outra senha ou URL, configure variaveis de ambiente antes de iniciar:
 
-**Turma:** 2TDSPX
+```properties
+DB_URL=jdbc:postgresql://localhost:5433/petjourney
+DB_USERNAME=postgres
+DB_PASSWORD=sua_senha_local
+POSTGRES_PASSWORD=sua_senha_local
 ```
 
+Nao coloque senhas reais em `application.properties`, `compose.yaml`, `.env` versionado ou arquivos da IDE.
 
-## 📋 Sumário
-- [Sobre o Projeto](#-sobre-o-projeto)
-- [Tecnologias Utilizadas](#-tecnologias-utilizadas)
-- [Arquitetura do Projeto](#-arquitetura-do-projeto)
-- [Relacionamentos do Projeto](#-relacionamentos-do-projeto).
-- [Requisitos Técnicos Atendidos](#-requisitos-técnicos-atendidos)
-- [Endpoints da API](#-petjourney-api-endpoints)
-- [Como Executar](#-como-executar)
+## Chaves JWT RSA
 
+O projeto usa JWT com RSA. As chaves locais de desenvolvimento ficam fora do Git:
 
-## 📌 Sobre o Projeto
-O **PetJourney** é uma solução completa para o gerenciamento de clínicas veterinárias e acompanhamento preventivo da saúde pet. Esta API foca no módulo clínico, permitindo que veterinários registrem prontuários, prescrevam medicamentos e gerenciem agendamentos, enquanto tutores acompanham o histórico de seus pets.
-
-## 🛠️ Tecnologias Utilizadas
-- **Linguagem**: Java 17
-- **Framework**: Spring Boot 3.4.0
-- **Persistência**: Spring Data JPA
-- **Banco de Dados**: H2
-- **Documentação**: SpringDoc OpenAPI (Swagger)
-- **Utilidades**: Lombok, Spring Boot DevTools
-- **HATEOAS**: Spring HATEOAS
-- **Cache**: Spring Cache
-
-## 🏗️ Arquitetura do Projeto
-O projeto segue a arquitetura de camadas padrão do Spring Boot:
-- **Controllers**: Exposição dos endpoints REST e implementação de HATEOAS.
-- **Services**: Lógica de negócio, orquestração e gerenciamento de cache.
-- **Repositories**: Interface de comunicação com o banco de dados via Spring Data JPA.
-- **Models**: Entidades JPA com lógica de atualização interna (`updateFrom`).
-- **DTOs**: Records para requisições e Classes para respostas (suporte a `RepresentationModel`).
-
-````markdown id="j3r8jv"
-## 📁 Project Structure
-
+```text
+src/main/resources/app.key
+src/main/resources/app.pub
 ```
-src/main/java/br/com/fiap/petjourney/
-├── config/
-├── controllers/
-├── dtos/
-│   ├── request/
-│   └── response/
-├── exceptions/
-├── models/
-│   └── enums/
-├── repositories/
-├── services/
-└── PetJourneyApplication.java
+
+Gere as chaves localmente antes de subir a aplicacao:
+
+```bash
+openssl genpkey -algorithm RSA -out src/main/resources/app.key -pkeyopt rsa_keygen_bits:2048
+openssl rsa -in src/main/resources/app.key -pubout -out src/main/resources/app.pub
 ```
-````
-## 🔗 Relacionamentos do Projeto
 
-O sistema **PetJourney API** foi modelado utilizando relacionamentos entre entidades para representar o funcionamento de uma clínica veterinária de forma organizada e escalável.
+Tambem e possivel apontar outros arquivos por variaveis:
 
-### 🏥 Clinic
+```properties
+RSA_PRIVATE_KEY=classpath:app.key
+RSA_PUBLIC_KEY=classpath:app.pub
+```
 
-A entidade `Clinic` representa a clínica veterinária e possui relacionamento com os veterinários e agendamentos do sistema.
+## E-mail
 
-* Uma clínica pode possuir vários veterinários.
-* Uma clínica pode possuir vários agendamentos.
+O envio de e-mail e feito pelo backend. O front/mobile apenas chama a API; o fluxo correto e:
 
-### 👨‍⚕️ Veterinarian
+```text
+Front/Mobile -> Backend -> Resend -> Usuario
+```
 
-A entidade `Veterinarian` representa os veterinários cadastrados no sistema.
+Por padrao, o ambiente local nao envia e-mail real. Com `MAIL_ENABLED=false`, o backend registra no log o conteudo que seria enviado, incluindo o codigo de primeiro acesso do tutor. Esse modo nao exige host SMTP, usuario, senha ou API key.
 
-* Cada veterinário pertence a uma clínica.
-* Um veterinário pode realizar vários atendimentos.
-* Um veterinário pode registrar vários prontuários médicos.
-* Um veterinário pode prescrever vários medicamentos.
+### Variaveis de ambiente
 
-### 👤 Tutor
+```properties
+MAIL_ENABLED=false
+MAIL_HOST=
+MAIL_PORT=587
+MAIL_USERNAME=
+MAIL_PASSWORD=
+MAIL_FROM=no-reply@petjourney.com
+MAIL_SMTP_AUTH=true
+MAIL_SMTP_STARTTLS=true
+```
 
-A entidade `Tutor` representa o responsável pelo pet.
+### Resend via SMTP
 
-* Um tutor pode possuir vários pets cadastrados.
+Para envio real com Resend:
 
-### 🐶 Pet
+```properties
+MAIL_ENABLED=true
+MAIL_HOST=smtp.resend.com
+MAIL_PORT=587
+MAIL_USERNAME=resend
+MAIL_PASSWORD=<API_KEY_DA_RESEND>
+MAIL_FROM=PetJourney <no-reply@seudominio.com>
+MAIL_SMTP_AUTH=true
+MAIL_SMTP_STARTTLS=true
+```
 
-A entidade `Pet` representa os animais cadastrados no sistema.
+Nunca coloque credenciais SMTP ou API keys no codigo, no `application.properties` ou em arquivos versionados. Use variaveis de ambiente no ambiente de execucao.
 
-* Cada pet pertence a um tutor.
-* Um pet pode possuir vários prontuários médicos.
-* Um pet pode possuir vários medicamentos.
-* Um pet pode possuir vários agendamentos.
+### Fluxos com e-mail
 
-### 📄 MedicalRecord
+Primeiro acesso do tutor:
 
-A entidade `MedicalRecord` representa os prontuários médicos dos pets.
+- `ADMIN_CLINICA` ou `VETERINARIO` cadastra tutor junto com pet.
+- O backend cria a conta do tutor como inativa.
+- O backend gera um codigo temporario de primeiro acesso.
+- O backend envia o codigo para o e-mail do tutor ou registra no log quando `MAIL_ENABLED=false`.
+- O tutor usa "Primeiro acesso" no app para informar e-mail, codigo e criar a propria senha.
+- Senhas nunca sao enviadas por e-mail.
 
-* Cada prontuário pertence a um pet.
-* Cada prontuário é registrado por um veterinário.
+Cancelamento de consulta:
 
-### 💊 Medication
-
-A entidade `Medication` representa os medicamentos prescritos.
-
-* Cada medicamento pertence a um pet.
-* Cada medicamento é associado a um veterinário responsável pela prescrição.
-
-### 📅 Appointment
-
-A entidade `Appointment` representa os agendamentos realizados na clínica.
-
-* Cada agendamento pertence a um pet.
-* Cada agendamento possui um veterinário responsável.
-* Cada agendamento pertence a uma clínica.
-
-
-## ✅ Requisitos Técnicos Atendidos
-- **CRUD Completo**: Para todas as entidades principais.
-- **Busca por Parâmetros**: Filtragem de tutores, veterinários, pets e agendamentos.
-- **Paginação e Ordenação**: Implementada em todos os endpoints de listagem via `Pageable`.
-- **HATEOAS**: Links de auto-referência (`self`) e navegação em todos os recursos.
-- **Cache**: Implementado nas consultas de Pets e Prontuários Médicos.
-- **Tratamento de Exceções**: Handler global com respostas padronizadas e exceções customizadas.
-
-## 📌 PetJourney API Endpoints
-
-## 🏥 Clinics
-
-| Método | Endpoint        | Descrição                |
-| ------ | --------------- | ------------------------ |
-| GET    | `/clinics`      | Listar todas as clínicas |
-| GET    | `/clinics/{id}` | Buscar clínica por ID    |
-| POST   | `/clinics`      | Criar nova clínica       |
-| PUT    | `/clinics/{id}` | Atualizar clínica        |
-| DELETE | `/clinics/{id}` | Deletar clínica          |
-
----
-
-## 👨‍⚕️ Veterinarians
-
-| Método | Endpoint              | Descrição                 |
-| ------ | --------------------- | ------------------------- |
-| GET    | `/veterinarians`      | Listar veterinários       |
-| GET    | `/veterinarians/{id}` | Buscar veterinário por ID |
-| POST   | `/veterinarians`      | Criar veterinário         |
-| PUT    | `/veterinarians/{id}` | Atualizar veterinário     |
-| DELETE | `/veterinarians/{id}` | Deletar veterinário       |
-
----
-
-## 👤 Tutors
-
-| Método | Endpoint       | Descrição           |
-| ------ | -------------- | ------------------- |
-| GET    | `/tutors`      | Listar tutores      |
-| GET    | `/tutors/{id}` | Buscar tutor por ID |
-
----
-
-## 🐶 Pets
-
-| Método | Endpoint     | Descrição         |
-| ------ | ------------ | ----------------- |
-| GET    | `/pets`      | Listar pets       |
-| GET    | `/pets/{id}` | Buscar pet por ID |
-
----
-
-## 📋 Medical Records
-
-| Método | Endpoint                                          | Descrição                   |
-| ------ | ------------------------------------------------- | --------------------------- |
-| GET    | `/medical-records/pet/{petId}`                    | Listar prontuários do pet   |
-| GET    | `/medical-records/search?start={start}&end={end}` | Buscar prontuários por data |
-| GET    | `/medical-records/{id}`                           | Buscar prontuário por ID    |
-| POST   | `/medical-records`                                | Criar prontuário            |
-| DELETE | `/medical-records/{id}`                           | Deletar prontuário          |
-
----
-
-## 💊 Medications
-
-| Método | Endpoint                   | Descrição                  |
-| ------ | -------------------------- | -------------------------- |
-| GET    | `/medications/pet/{petId}` | Listar medicamentos do pet |
-| GET    | `/medications/{id}`        | Buscar medicamento por ID  |
-| POST   | `/medications`             | Criar medicamento          |
-| PUT    | `/medications/{id}`        | Atualizar medicamento      |
-| DELETE | `/medications/{id}`        | Deletar medicamento        |
-
----
-
-## 📅 Appointments
-
-| Método | Endpoint                                       | Descrição                    |
-| ------ | ---------------------------------------------- | ---------------------------- |
-| GET    | `/appointments/pet/{petId}`                    | Listar agendamentos do pet   |
-| GET    | `/appointments/search?start={start}&end={end}` | Buscar agendamentos por data |
-| GET    | `/appointments/{id}`                           | Buscar agendamento por ID    |
-| POST   | `/appointments`                                | Criar agendamento            |
-| PUT    | `/appointments/{id}`                           | Atualizar agendamento        |
-| DELETE | `/appointments/{id}`                           | Deletar agendamento          |
-
----
-
-
-## 🚀 Como Executar
-1. Clone o repositório.
-2. Certifique-se de ter o JDK 17 instalado.
-3. Execute o comando: `./mvnw spring-boot:run`
-4. Acesse o Swagger UI: `http://localhost:8080/swagger-ui/index.html`
-5. Acesse o H2 Console: `http://localhost:8080/h2-console` (JDBC URL: `jdbc:h2:mem:petjourneydb`)
-
-
+- `PATCH /appointments/{id}/cancel` mantem a regra de 24 horas.
+- Se quem cancelou foi `TUTOR`, o backend notifica o veterinario; se o veterinario nao tiver e-mail, notifica a clinica.
+- Se quem cancelou foi `VETERINARIO` ou `ADMIN_CLINICA`, o backend notifica o tutor.
+- Se o destinatario estiver vazio, o backend registra warning e nao interrompe a operacao.

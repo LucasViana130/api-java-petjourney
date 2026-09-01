@@ -32,6 +32,18 @@ public class MedicalRecord {
 
     private String observations;
 
+    @Column(length = 2000)
+    private String clinicalNotes;
+
+    @Column(length = 2000)
+    private String recommendations;
+
+    @Column(length = 2000)
+    private String prescriptionNotes;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    private Appointment appointment;
+
     @ManyToOne
     private Pet pet;
 
@@ -44,6 +56,10 @@ public class MedicalRecord {
         this.diagnosis = request.diagnosis();
         this.conduct = request.conduct();
         this.observations = request.observations();
+        this.clinicalNotes = request.clinicalNotes();
+        this.recommendations = request.recommendations();
+        this.prescriptionNotes = request.prescriptionNotes();
+        this.appointment = null;
         this.pet = pet;
         this.veterinarian = veterinarian;
     }
@@ -54,6 +70,9 @@ public class MedicalRecord {
         this.diagnosis = request.diagnosis();
         this.conduct = request.conduct();
         this.observations = request.observations();
+        this.clinicalNotes = request.clinicalNotes();
+        this.recommendations = request.recommendations();
+        this.prescriptionNotes = request.prescriptionNotes();
         this.pet = pet;
         this.veterinarian = veterinarian;
     }

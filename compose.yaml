@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: petjourney-postgres
+    environment:
+      POSTGRES_DB: petjourney
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "5433:5432"
+    volumes:
+      - petjourney-postgres-data:/var/lib/postgresql/data
+
+volumes:
+  petjourney-postgres-data:

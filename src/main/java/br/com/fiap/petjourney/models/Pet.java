@@ -1,5 +1,6 @@
 package br.com.fiap.petjourney.models;
 
+import br.com.fiap.petjourney.dtos.request.PetRequest;
 import br.com.fiap.petjourney.models.enums.PetSex;
 import br.com.fiap.petjourney.models.enums.PetSpecies;
 import jakarta.persistence.*;
@@ -40,4 +41,24 @@ public class Pet {
 
     @ManyToOne
     private Tutor tutor;
+
+    public Pet(PetRequest request, Tutor tutor) {
+        this.name = request.name();
+        this.species = request.species();
+        this.breed = request.breed();
+        this.sex = request.sex();
+        this.birthDate = request.birthDate();
+        this.weight = request.weight();
+        this.tutor = tutor;
+    }
+
+    public void updateFrom(PetRequest request, Tutor tutor) {
+        this.name = request.name();
+        this.species = request.species();
+        this.breed = request.breed();
+        this.sex = request.sex();
+        this.birthDate = request.birthDate();
+        this.weight = request.weight();
+        this.tutor = tutor;
+    }
 }

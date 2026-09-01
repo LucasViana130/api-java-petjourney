@@ -44,6 +44,9 @@ public class Medication {
     @ManyToOne
     private Veterinarian veterinarian;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    private MedicalRecord medicalRecord;
+
     public Medication(MedicationRequest request, Pet pet, Veterinarian veterinarian) {
         this.name = request.name();
         this.dosage = request.dosage();

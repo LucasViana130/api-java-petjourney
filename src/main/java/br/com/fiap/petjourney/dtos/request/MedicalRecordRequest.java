@@ -14,6 +14,11 @@ public record MedicalRecordRequest(
     String diagnosis,
     String conduct,
     String observations,
+    String clinicalNotes,
+    String recommendations,
+    String prescriptionNotes,
+
+    Long appointmentId,
 
     @NotNull(message = "O ID do pet é obrigatório")
     Long petId,

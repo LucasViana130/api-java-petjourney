@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -46,6 +47,7 @@ public class VeterinarianController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN_CLINICA')")
     @Operation(summary = "Cadastrar novo veterinário")
     public ResponseEntity<VeterinarianResponse> create(@RequestBody @Valid VeterinarianRequest request) {
         VeterinarianResponse vet = service.create(request);
@@ -54,6 +56,7 @@ public class VeterinarianController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN_CLINICA')")
     @Operation(summary = "Atualizar veterinário")
     public ResponseEntity<VeterinarianResponse> update(@PathVariable Long id, @RequestBody @Valid VeterinarianRequest request) {
         VeterinarianResponse vet = service.update(id, request);
@@ -62,6 +65,7 @@ public class VeterinarianController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN_CLINICA')")
     @Operation(summary = "Excluir veterinário")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         service.delete(id);

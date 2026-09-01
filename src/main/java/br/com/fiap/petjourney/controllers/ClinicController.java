@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -44,6 +45,7 @@ public class ClinicController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN_SISTEMA')")
     @Operation(summary = "Cadastrar nova clínica")
     public ResponseEntity<ClinicResponse> create(@RequestBody @Valid ClinicRequest request) {
         ClinicResponse clinic = service.create(request);
@@ -52,6 +54,7 @@ public class ClinicController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN_SISTEMA')")
     @Operation(summary = "Atualizar clínica")
     public ResponseEntity<ClinicResponse> update(@PathVariable Long id, @RequestBody @Valid ClinicRequest request) {
         ClinicResponse clinic = service.update(id, request);
@@ -60,6 +63,7 @@ public class ClinicController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN_SISTEMA')")
     @Operation(summary = "Excluir clínica")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         service.delete(id);

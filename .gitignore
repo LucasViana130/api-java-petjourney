@@ -1,0 +1,9 @@
+target/
+.idea/
+*.iml
+.vscode/
+.env
+.env.*
+!.env.example
+src/main/resources/app.key
+src/main/resources/app.pub
