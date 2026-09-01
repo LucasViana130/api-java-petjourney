@@ -115,6 +115,9 @@ Cancelamento de consulta:
 
 ## Contrato para Mobile
 
+- Existe um administrador geral com role `ADMIN_SISTEMA`: `admin.sistema@petjourney.com` / `123456` nos dados seed.
+- `ADMIN_SISTEMA` gerencia clinicas com `POST /clinics`, `PUT /clinics/{id}` e `DELETE /clinics/{id}`.
+- `ADMIN_SISTEMA` cria administradores de clinica com `POST /system/clinics/{clinicId}/admins`.
 - Use `POST /auth/login` como endpoint oficial de login.
 - O endpoint `POST /login` continua disponivel por compatibilidade.
 - Envie `Authorization: Bearer TOKEN` nas rotas protegidas.
@@ -124,5 +127,7 @@ Cancelamento de consulta:
 - Os enums enviados pelo Mobile devem manter os valores da API, por exemplo `CACHORRO`, `GATO`, `MACHO` e `FEMEA`.
 - `ADMIN_CLINICA` pode excluir Tutor/Pet/Veterinario conforme regras da API; `VETERINARIO` nao deve exibir botoes de exclusao.
 - Ao cadastrar veterinario com e-mail, o backend cria uma conta `VETERINARIO` inativa, gera codigo de primeiro acesso e envia/loga o codigo.
+- O e-mail do veterinario fica imutavel quando existe conta de acesso associada, pois ele e usado como username de login.
+- Ao excluir um veterinario, o backend remove primeiro a conta de acesso associada. Se houver historico clinico vinculado, o banco ainda pode bloquear a exclusao.
 - Ao cadastrar tutor com pet, o backend cria uma conta `TUTOR` inativa, gera codigo de primeiro acesso e envia/loga o codigo.
 - O campo `firstAccessCode` ainda aparece na resposta do cadastro tutor + pet para facilitar testes locais.

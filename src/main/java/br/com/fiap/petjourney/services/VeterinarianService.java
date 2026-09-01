@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -71,9 +72,11 @@ public class VeterinarianService {
         return VeterinarianResponse.fromEntity(veterinarian);
     }
 
+    @Transactional
     public VeterinarianResponse update(Long id, VeterinarianRequest request) {
         assertAdminClinic();
         Veterinarian veterinarian = findAccessibleVeterinarian(id);
+        assertEmailNotChanged(veterinarian, request.email());
 
         if (!request.clinicId().equals(authenticatedUser.clinicId())) {
             throw new ForbiddenOperationException("Administrador nao pode mover veterinario para outra clinica");
@@ -87,9 +90,12 @@ public class VeterinarianService {
         return VeterinarianResponse.fromEntity(repository.save(veterinarian));
     }
 
+    @Transactional
     public void delete(Long id) {
         assertAdminClinic();
         Veterinarian veterinarian = findAccessibleVeterinarian(id);
+        userAccountRepository.findByVeterinarianId(veterinarian.getId())
+                .ifPresent(userAccountRepository::delete);
         repository.delete(veterinarian);
     }
 
@@ -134,7 +140,24 @@ public class VeterinarianService {
         emailService.sendFirstAccessCode(username, veterinarian.getName(), code, expiresAt);
     }
 
+    private void assertEmailNotChanged(Veterinarian veterinarian, String requestedEmail) {
+        boolean hasAccessAccount = userAccountRepository.findByVeterinarianId(veterinarian.getId()).isPresent();
+        boolean emailChanged = !Objects.equals(normalize(veterinarian.getEmail()), normalize(requestedEmail));
+
+        if (hasAccessAccount && emailChanged) {
+            throw new ForbiddenOperationException("E-mail do veterinario nao pode ser alterado apos a criacao da conta");
+        }
+    }
+
     private String generateFirstAccessCode() {
         return String.valueOf(100000 + secureRandom.nextInt(900000));
+    }
+
+    private String normalize(String value) {
+        return hasText(value) ? value.trim().toLowerCase() : null;
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 }
