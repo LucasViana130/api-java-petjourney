@@ -24,6 +24,7 @@ public class PetResponse extends RepresentationModel<PetResponse> {
     private PetSex sex;
     private LocalDate birthDate;
     private BigDecimal weight;
+    private Long tutorId;
     private String tutorName;
 
     public static PetResponse fromEntity(Pet pet) {
@@ -35,6 +36,7 @@ public class PetResponse extends RepresentationModel<PetResponse> {
                 .sex(pet.getSex())
                 .birthDate(pet.getBirthDate())
                 .weight(pet.getWeight())
+                .tutorId(pet.getTutor() != null ? pet.getTutor().getId() : null)
                 .tutorName(pet.getTutor() != null ? pet.getTutor().getName() : null)
                 .build();
     }

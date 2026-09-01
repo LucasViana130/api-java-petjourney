@@ -61,6 +61,23 @@ MAIL_SMTP_AUTH=true
 MAIL_SMTP_STARTTLS=true
 ```
 
+### Gmail via SMTP
+
+Para teste gratuito com Gmail, use uma senha de app do Google. Nao use a senha normal da conta.
+
+```properties
+MAIL_ENABLED=true
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=seuemail@gmail.com
+MAIL_PASSWORD=sua_senha_de_app
+MAIL_FROM=PetJourney <seuemail@gmail.com>
+MAIL_SMTP_AUTH=true
+MAIL_SMTP_STARTTLS=true
+```
+
+O Gmail pode reescrever o remetente para a conta autenticada. Para entrega de faculdade/teste, isso costuma ser suficiente.
+
 ### Resend via SMTP
 
 Para envio real com Resend:
@@ -95,3 +112,17 @@ Cancelamento de consulta:
 - Se quem cancelou foi `TUTOR`, o backend notifica o veterinario; se o veterinario nao tiver e-mail, notifica a clinica.
 - Se quem cancelou foi `VETERINARIO` ou `ADMIN_CLINICA`, o backend notifica o tutor.
 - Se o destinatario estiver vazio, o backend registra warning e nao interrompe a operacao.
+
+## Contrato para Mobile
+
+- Use `POST /auth/login` como endpoint oficial de login.
+- O endpoint `POST /login` continua disponivel por compatibilidade.
+- Envie `Authorization: Bearer TOKEN` nas rotas protegidas.
+- Use `GET /auth/me` para restaurar/validar sessao.
+- As listagens `GET /veterinarians`, `GET /tutors` e `GET /pets` retornam pagina Spring; no Mobile, leia os dados em `response.content`.
+- `PetResponse` retorna `tutorId` e `tutorName`; use `tutorId` ao editar pet com `PUT /pets/{id}`.
+- Os enums enviados pelo Mobile devem manter os valores da API, por exemplo `CACHORRO`, `GATO`, `MACHO` e `FEMEA`.
+- `ADMIN_CLINICA` pode excluir Tutor/Pet/Veterinario conforme regras da API; `VETERINARIO` nao deve exibir botoes de exclusao.
+- Ao cadastrar veterinario com e-mail, o backend cria uma conta `VETERINARIO` inativa, gera codigo de primeiro acesso e envia/loga o codigo.
+- Ao cadastrar tutor com pet, o backend cria uma conta `TUTOR` inativa, gera codigo de primeiro acesso e envia/loga o codigo.
+- O campo `firstAccessCode` ainda aparece na resposta do cadastro tutor + pet para facilitar testes locais.

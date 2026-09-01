@@ -5,14 +5,21 @@ import br.com.fiap.petjourney.dtos.response.VeterinarianResponse;
 import br.com.fiap.petjourney.exceptions.ForbiddenOperationException;
 import br.com.fiap.petjourney.exceptions.ResourceNotFoundException;
 import br.com.fiap.petjourney.models.Clinic;
+import br.com.fiap.petjourney.models.UserAccount;
 import br.com.fiap.petjourney.models.Veterinarian;
 import br.com.fiap.petjourney.models.enums.UserRole;
 import br.com.fiap.petjourney.repositories.ClinicRepository;
+import br.com.fiap.petjourney.repositories.UserAccountRepository;
 import br.com.fiap.petjourney.repositories.VeterinarianRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -20,7 +27,11 @@ public class VeterinarianService {
 
     private final VeterinarianRepository repository;
     private final ClinicRepository clinicRepository;
+    private final UserAccountRepository userAccountRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
     private final AuthenticatedUserService authenticatedUser;
+    private final SecureRandom secureRandom = new SecureRandom();
 
     public Page<VeterinarianResponse> findAll(String name, Pageable pageable) {
         UserRole role = authenticatedUser.role();
@@ -43,17 +54,21 @@ public class VeterinarianService {
         return VeterinarianResponse.fromEntity(findAccessibleVeterinarian(id));
     }
 
+    @Transactional
     public VeterinarianResponse create(VeterinarianRequest request) {
         assertAdminClinic();
         Long clinicId = authenticatedUser.clinicId();
         if (!request.clinicId().equals(clinicId)) {
-            throw new ForbiddenOperationException("Administrador não pode cadastrar veterinário em outra clínica");
+            throw new ForbiddenOperationException("Administrador nao pode cadastrar veterinario em outra clinica");
         }
 
         Clinic clinic = clinicRepository.findById(clinicId)
-                .orElseThrow(() -> new ResourceNotFoundException("Clínica não encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("Clinica nao encontrada"));
 
-        return VeterinarianResponse.fromEntity(repository.save(new Veterinarian(request, clinic)));
+        Veterinarian veterinarian = repository.save(new Veterinarian(request, clinic));
+        createInactiveVeterinarianAccess(veterinarian);
+
+        return VeterinarianResponse.fromEntity(veterinarian);
     }
 
     public VeterinarianResponse update(Long id, VeterinarianRequest request) {
@@ -61,11 +76,11 @@ public class VeterinarianService {
         Veterinarian veterinarian = findAccessibleVeterinarian(id);
 
         if (!request.clinicId().equals(authenticatedUser.clinicId())) {
-            throw new ForbiddenOperationException("Administrador não pode mover veterinário para outra clínica");
+            throw new ForbiddenOperationException("Administrador nao pode mover veterinario para outra clinica");
         }
 
         Clinic clinic = clinicRepository.findById(authenticatedUser.clinicId())
-                .orElseThrow(() -> new ResourceNotFoundException("Clínica não encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("Clinica nao encontrada"));
 
         veterinarian.updateFrom(request, clinic);
 
@@ -82,15 +97,44 @@ public class VeterinarianService {
         UserRole role = authenticatedUser.role();
         if (role == UserRole.ADMIN_CLINICA || role == UserRole.VETERINARIO) {
             return repository.findByIdAndClinicId(id, authenticatedUser.clinicId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Veterinário não encontrado para esta clínica"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Veterinario nao encontrado para esta clinica"));
         }
         return repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Veterinário não encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Veterinario nao encontrado"));
     }
 
     private void assertAdminClinic() {
         if (authenticatedUser.role() != UserRole.ADMIN_CLINICA) {
-            throw new ForbiddenOperationException("Apenas administradores de clínica podem alterar veterinários");
+            throw new ForbiddenOperationException("Apenas administradores de clinica podem alterar veterinarios");
         }
+    }
+
+    private void createInactiveVeterinarianAccess(Veterinarian veterinarian) {
+        if (veterinarian.getEmail() == null || veterinarian.getEmail().isBlank()) {
+            return;
+        }
+
+        String username = veterinarian.getEmail().toLowerCase();
+        if (userAccountRepository.existsByUsername(username)) {
+            throw new ForbiddenOperationException("Ja existe usuario cadastrado com este e-mail");
+        }
+
+        String code = generateFirstAccessCode();
+        LocalDateTime expiresAt = LocalDateTime.now().plusHours(24);
+        userAccountRepository.save(UserAccount.builder()
+                .username(username)
+                .password(passwordEncoder.encode(generateFirstAccessCode()))
+                .active(false)
+                .firstAccessCode(code)
+                .firstAccessExpiresAt(expiresAt)
+                .role(UserRole.VETERINARIO)
+                .veterinarian(veterinarian)
+                .build());
+
+        emailService.sendFirstAccessCode(username, veterinarian.getName(), code, expiresAt);
+    }
+
+    private String generateFirstAccessCode() {
+        return String.valueOf(100000 + secureRandom.nextInt(900000));
     }
 }
