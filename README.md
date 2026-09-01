@@ -116,8 +116,10 @@ Cancelamento de consulta:
 ## Contrato para Mobile
 
 - Existe um administrador geral com role `ADMIN_SISTEMA`: `admin.sistema@petjourney.com` / `123456` nos dados seed.
+- `ADMIN_SISTEMA` tem a visao global de clinicas com `GET /clinics`.
 - `ADMIN_SISTEMA` gerencia clinicas com `POST /clinics`, `PUT /clinics/{id}` e `DELETE /clinics/{id}`.
 - `ADMIN_SISTEMA` cria administradores de clinica com `POST /system/clinics/{clinicId}/admins`.
+- `GET /clinics/{id}` pode ser usado por perfis autenticados, mas o backend restringe o acesso ao escopo permitido; ADMIN_CLINICA, VETERINARIO e TUTOR nao possuem listagem global.
 - Use `POST /auth/login` como endpoint oficial de login.
 - O endpoint `POST /login` continua disponivel por compatibilidade.
 - Envie `Authorization: Bearer TOKEN` nas rotas protegidas.

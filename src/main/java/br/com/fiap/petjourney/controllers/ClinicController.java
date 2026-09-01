@@ -28,6 +28,7 @@ public class ClinicController {
     private final ClinicService service;
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN_SISTEMA')")
     @Operation(summary = "Listar todas as clínicas com paginação")
     public ResponseEntity<Page<ClinicResponse>> getAll(@PageableDefault(size = 10) @ParameterObject Pageable pageable) {
         Page<ClinicResponse> clinics = service.findAll(pageable);
@@ -40,7 +41,6 @@ public class ClinicController {
     public ResponseEntity<ClinicResponse> getById(@PathVariable Long id) {
         ClinicResponse clinic = service.findById(id);
         clinic.add(linkTo(methodOn(ClinicController.class).getById(id)).withSelfRel());
-        clinic.add(linkTo(methodOn(ClinicController.class).getAll(Pageable.unpaged())).withRel("all-clinics"));
         return ResponseEntity.ok(clinic);
     }
 
