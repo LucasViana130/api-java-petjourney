@@ -160,6 +160,10 @@ public class AppointmentService {
 
     public void delete(Long id) {
         Appointment appointment = findAccessibleAppointment(id);
+        UserRole role = authenticatedUser.role();
+        if (role != UserRole.ADMIN_CLINICA && role != UserRole.VETERINARIO) {
+            throw new ForbiddenOperationException("Perfil sem permissao para excluir agendamento");
+        }
         repository.delete(appointment);
     }
 

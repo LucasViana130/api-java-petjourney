@@ -118,6 +118,7 @@ public class AppointmentController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN_CLINICA', 'VETERINARIO')")
     @Operation(summary = "Excluir agendamento")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         service.delete(id);

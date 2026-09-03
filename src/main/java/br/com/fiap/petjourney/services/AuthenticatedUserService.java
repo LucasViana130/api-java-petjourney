@@ -29,10 +29,6 @@ public class AuthenticatedUserService {
         return getLongClaim("veterinarianId");
     }
 
-    public boolean hasRole(UserRole role) {
-        return role().equals(role);
-    }
-
     private Long getLongClaim(String name) {
         Object value = jwt().getClaims().get(name);
         if (value == null) {

@@ -56,10 +56,10 @@ public class MedicationService {
     @CacheEvict(value = "medications", allEntries = true)
     public MedicationResponse create(MedicationRequest request) {
         Pet pet = petRepository.findById(request.petId())
-                .orElseThrow(() -> new ResourceNotFoundException("Pet não encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Pet nao encontrado"));
 
         Veterinarian veterinarian = veterinarianRepository.findById(request.veterinarianId())
-                .orElseThrow(() -> new ResourceNotFoundException("Veterinário não encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Veterinario nao encontrado"));
 
         assertWriteAccess(pet, veterinarian);
         return MedicationResponse.fromEntity(repository.save(new Medication(request, pet, veterinarian)));
@@ -67,14 +67,13 @@ public class MedicationService {
 
     @CacheEvict(value = "medications", allEntries = true)
     public MedicationResponse update(Long id, MedicationRequest request) {
-        Medication medication = repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Medicamento não encontrado"));
+        Medication medication = findAccessibleMedication(id);
 
         Pet pet = petRepository.findById(request.petId())
-                .orElseThrow(() -> new ResourceNotFoundException("Pet não encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Pet nao encontrado"));
 
         Veterinarian veterinarian = veterinarianRepository.findById(request.veterinarianId())
-                .orElseThrow(() -> new ResourceNotFoundException("Veterinário não encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Veterinario nao encontrado"));
 
         assertWriteAccess(pet, veterinarian);
         medication.updateFrom(request, pet, veterinarian);
@@ -85,6 +84,7 @@ public class MedicationService {
     @CacheEvict(value = "medications", allEntries = true)
     public void delete(Long id) {
         Medication medication = findAccessibleMedication(id);
+        assertWriteAccess(medication.getPet(), medication.getVeterinarian());
         repository.delete(medication);
     }
 
@@ -95,17 +95,17 @@ public class MedicationService {
 
     private Medication findAccessibleMedication(Long id) {
         Medication medication = repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Medicamento não encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Medicamento nao encontrado"));
 
         UserRole role = authenticatedUser.role();
         if (role == UserRole.TUTOR && !medication.getPet().getTutor().getId().equals(authenticatedUser.tutorId())) {
-            throw new ForbiddenOperationException("Tutor não pode acessar medicamento de outro tutor");
+            throw new ForbiddenOperationException("Tutor nao pode acessar medicamento de outro tutor");
         }
         if (role == UserRole.ADMIN_CLINICA && !medication.getVeterinarian().getClinic().getId().equals(authenticatedUser.clinicId())) {
-            throw new ForbiddenOperationException("Administrador não pode acessar medicamento de outra clínica");
+            throw new ForbiddenOperationException("Administrador nao pode acessar medicamento de outra clinica");
         }
         if (role == UserRole.VETERINARIO && !medication.getVeterinarian().getId().equals(authenticatedUser.veterinarianId())) {
-            throw new ForbiddenOperationException("Veterinário não pode acessar medicamento de outro veterinário");
+            throw new ForbiddenOperationException("Veterinario nao pode acessar medicamento de outro veterinario");
         }
 
         return medication;
@@ -114,18 +114,21 @@ public class MedicationService {
     private void assertWriteAccess(Pet pet, Veterinarian veterinarian) {
         UserRole role = authenticatedUser.role();
         if (role == UserRole.TUTOR) {
-            throw new ForbiddenOperationException("Tutor não pode prescrever medicamento");
+            throw new ForbiddenOperationException("Tutor nao pode prescrever medicamento");
+        }
+        if (role == UserRole.ADMIN_SISTEMA) {
+            throw new ForbiddenOperationException("Administrador do sistema nao pode prescrever medicamento");
         }
         if (veterinarian.getClinic() == null
                 || pet.getTutor().getClinic() == null
                 || !veterinarian.getClinic().getId().equals(pet.getTutor().getClinic().getId())) {
-            throw new ForbiddenOperationException("Pet não pertence à carteira de clientes da clínica");
+            throw new ForbiddenOperationException("Pet nao pertence a carteira de clientes da clinica");
         }
         if (role == UserRole.ADMIN_CLINICA && !veterinarian.getClinic().getId().equals(authenticatedUser.clinicId())) {
-            throw new ForbiddenOperationException("Administrador não pode prescrever em outra clínica");
+            throw new ForbiddenOperationException("Administrador nao pode prescrever em outra clinica");
         }
         if (role == UserRole.VETERINARIO && !veterinarian.getId().equals(authenticatedUser.veterinarianId())) {
-            throw new ForbiddenOperationException("Veterinário não pode prescrever para outro veterinário");
+            throw new ForbiddenOperationException("Veterinario nao pode prescrever para outro veterinario");
         }
     }
 }

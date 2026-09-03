@@ -126,8 +126,13 @@ Cancelamento de consulta:
 - Use `GET /auth/me` para restaurar/validar sessao.
 - As listagens `GET /veterinarians`, `GET /tutors` e `GET /pets` retornam pagina Spring; no Mobile, leia os dados em `response.content`.
 - `PetResponse` retorna `tutorId` e `tutorName`; use `tutorId` ao editar pet com `PUT /pets/{id}`.
+- No workflow `POST /workflows/tutors/register-with-pet`, o `pet.tutorId` enviado pelo cliente e ignorado; o backend sempre usa o tutor criado na mesma requisicao.
 - Os enums enviados pelo Mobile devem manter os valores da API, por exemplo `CACHORRO`, `GATO`, `MACHO` e `FEMEA`.
 - `ADMIN_CLINICA` pode excluir Tutor/Pet/Veterinario conforme regras da API; `VETERINARIO` nao deve exibir botoes de exclusao.
+- Tutor nao pode excluir agendamento diretamente; deve usar `PATCH /appointments/{id}/cancel`, que aplica as regras de negocio.
+- Tutor pode consultar prontuario e medicamento do proprio pet, mas nao pode criar, editar nem excluir dados clinicos.
+- `TutorRequest` nao recebe senha; a senha do tutor sempre e criada em `POST /auth/first-access/activate`.
+- Tutor nao pode alterar o proprio CPF pelo `PUT /tutors/{id}`.
 - Ao cadastrar veterinario com e-mail, o backend cria uma conta `VETERINARIO` inativa, gera codigo de primeiro acesso e envia/loga o codigo.
 - O e-mail do veterinario fica imutavel quando existe conta de acesso associada, pois ele e usado como username de login.
 - Ao excluir um veterinario, o backend remove primeiro a conta de acesso associada. Se houver historico clinico vinculado, o banco ainda pode bloquear a exclusao.

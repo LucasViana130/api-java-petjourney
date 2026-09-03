@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Objects;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -129,7 +130,7 @@ public class VeterinarianService {
         LocalDateTime expiresAt = LocalDateTime.now().plusHours(24);
         userAccountRepository.save(UserAccount.builder()
                 .username(username)
-                .password(passwordEncoder.encode(generateFirstAccessCode()))
+                .password(passwordEncoder.encode(generateTemporaryPassword()))
                 .active(false)
                 .firstAccessCode(code)
                 .firstAccessExpiresAt(expiresAt)
@@ -151,6 +152,10 @@ public class VeterinarianService {
 
     private String generateFirstAccessCode() {
         return String.valueOf(100000 + secureRandom.nextInt(900000));
+    }
+
+    private String generateTemporaryPassword() {
+        return UUID.randomUUID().toString();
     }
 
     private String normalize(String value) {

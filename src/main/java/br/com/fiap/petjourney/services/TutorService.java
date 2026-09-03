@@ -20,6 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.Objects;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -72,6 +74,9 @@ public class TutorService {
                 && authenticatedUser.role() != UserRole.ADMIN_CLINICA
                 && authenticatedUser.role() != UserRole.VETERINARIO) {
             throw new ForbiddenOperationException("Perfil sem permissão para atualizar tutor");
+        }
+        if (authenticatedUser.role() == UserRole.TUTOR && !Objects.equals(tutor.getCpf(), request.cpf())) {
+            throw new ForbiddenOperationException("Tutor nao pode alterar o proprio CPF");
         }
         tutor.updateFrom(request);
         return TutorResponse.fromEntity(repository.save(tutor));
@@ -136,7 +141,7 @@ public class TutorService {
         LocalDateTime expiresAt = LocalDateTime.now().plusHours(24);
         userAccountRepository.save(UserAccount.builder()
                 .username(username)
-                .password(passwordEncoder.encode(generateFirstAccessCode()))
+                .password(passwordEncoder.encode(generateTemporaryPassword()))
                 .active(false)
                 .firstAccessCode(code)
                 .firstAccessExpiresAt(expiresAt)
@@ -156,5 +161,9 @@ public class TutorService {
 
     private String generateFirstAccessCode() {
         return String.valueOf(100000 + secureRandom.nextInt(900000));
+    }
+
+    private String generateTemporaryPassword() {
+        return UUID.randomUUID().toString();
     }
 }
