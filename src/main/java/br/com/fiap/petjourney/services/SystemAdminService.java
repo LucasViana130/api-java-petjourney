@@ -26,7 +26,9 @@ public class SystemAdminService {
             throw new ForbiddenOperationException("Apenas administradores do sistema podem criar administradores de clínica");
         }
 
-        if (userAccountRepository.existsByUsername(request.username())) {
+        String username = normalizeUsername(request.username());
+
+        if (userAccountRepository.existsByUsername(username)) {
             throw new ForbiddenOperationException("Já existe usuário cadastrado com este e-mail");
         }
 
@@ -34,12 +36,16 @@ public class SystemAdminService {
                 .orElseThrow(() -> new ResourceNotFoundException("Clínica não encontrada"));
 
         var user = UserAccount.builder()
-                .username(request.username().toLowerCase())
+                .username(username)
                 .password(passwordEncoder.encode(request.password()))
                 .role(UserRole.ADMIN_CLINICA)
                 .clinic(clinic)
                 .build();
 
         return UserAccountResponse.fromEntity(userAccountRepository.save(user));
+    }
+
+    private String normalizeUsername(String username) {
+        return username.trim().toLowerCase();
     }
 }

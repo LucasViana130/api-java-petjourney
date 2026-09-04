@@ -68,6 +68,7 @@ public class TutorService {
         return TutorResponse.fromEntity(tutor);
     }
 
+    @Transactional
     public TutorResponse update(Long id, TutorRequest request) {
         Tutor tutor = findAccessibleTutor(id);
         if (authenticatedUser.role() != UserRole.TUTOR
@@ -78,6 +79,7 @@ public class TutorService {
         if (authenticatedUser.role() == UserRole.TUTOR && !Objects.equals(tutor.getCpf(), request.cpf())) {
             throw new ForbiddenOperationException("Tutor nao pode alterar o proprio CPF");
         }
+        assertEmailNotChanged(tutor, request.email());
         tutor.updateFrom(request);
         return TutorResponse.fromEntity(repository.save(tutor));
     }
@@ -88,6 +90,8 @@ public class TutorService {
         if (authenticatedUser.role() != UserRole.ADMIN_CLINICA) {
             throw new ForbiddenOperationException("Apenas a clínica pode excluir tutores clientes");
         }
+        userAccountRepository.findByTutorId(tutor.getId())
+                .ifPresent(userAccountRepository::delete);
         repository.delete(tutor);
     }
 
@@ -132,7 +136,7 @@ public class TutorService {
             return;
         }
 
-        String username = tutor.getEmail().toLowerCase();
+        String username = normalize(tutor.getEmail());
         if (userAccountRepository.existsByUsername(username)) {
             throw new ForbiddenOperationException("Já existe usuário cadastrado com este e-mail");
         }
@@ -165,5 +169,22 @@ public class TutorService {
 
     private String generateTemporaryPassword() {
         return UUID.randomUUID().toString();
+    }
+
+    private void assertEmailNotChanged(Tutor tutor, String requestedEmail) {
+        boolean hasAccessAccount = userAccountRepository.findByTutorId(tutor.getId()).isPresent();
+        boolean emailChanged = !Objects.equals(normalize(tutor.getEmail()), normalize(requestedEmail));
+
+        if (hasAccessAccount && emailChanged) {
+            throw new ForbiddenOperationException("E-mail do tutor nao pode ser alterado apos a criacao da conta");
+        }
+    }
+
+    private String normalize(String value) {
+        return hasText(value) ? value.trim().toLowerCase() : null;
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 }

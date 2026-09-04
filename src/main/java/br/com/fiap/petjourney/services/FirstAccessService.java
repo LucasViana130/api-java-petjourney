@@ -18,7 +18,7 @@ public class FirstAccessService {
     private final PasswordEncoder passwordEncoder;
 
     public UserAccountResponse activate(FirstAccessRequest request) {
-        var user = userAccountRepository.findByUsernameAndFirstAccessCode(request.username().toLowerCase(), request.code())
+        var user = userAccountRepository.findByUsernameAndFirstAccessCode(normalizeUsername(request.username()), request.code())
                 .orElseThrow(() -> new ForbiddenOperationException("Código de primeiro acesso inválido"));
 
         if (Boolean.TRUE.equals(user.getActive())) {
@@ -38,5 +38,9 @@ public class FirstAccessService {
         user.setFirstAccessExpiresAt(null);
 
         return UserAccountResponse.fromEntity(userAccountRepository.save(user));
+    }
+
+    private String normalizeUsername(String username) {
+        return username.trim().toLowerCase();
     }
 }

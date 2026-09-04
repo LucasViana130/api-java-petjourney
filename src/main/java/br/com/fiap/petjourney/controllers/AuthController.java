@@ -29,11 +29,13 @@ public class AuthController {
 
     @PostMapping({"/login", "/auth/login"})
     public LoginResponse login(@RequestBody @Valid LoginRequest request) {
+        String username = normalizeUsername(request.username());
+
         authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.username(), request.password())
+                new UsernamePasswordAuthenticationToken(username, request.password())
         );
 
-        var user = userAccountRepository.findByUsername(request.username())
+        var user = userAccountRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado"));
 
         return new LoginResponse(
@@ -56,5 +58,9 @@ public class AuthController {
     @PostMapping("/auth/first-access/activate")
     public UserAccountResponse activateFirstAccess(@RequestBody @Valid FirstAccessRequest request) {
         return firstAccessService.activate(request);
+    }
+
+    private String normalizeUsername(String username) {
+        return username.trim().toLowerCase();
     }
 }

@@ -121,7 +121,7 @@ public class VeterinarianService {
             return;
         }
 
-        String username = veterinarian.getEmail().toLowerCase();
+        String username = normalize(veterinarian.getEmail());
         if (userAccountRepository.existsByUsername(username)) {
             throw new ForbiddenOperationException("Ja existe usuario cadastrado com este e-mail");
         }

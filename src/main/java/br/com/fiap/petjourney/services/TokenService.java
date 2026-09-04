@@ -26,7 +26,8 @@ public class TokenService {
     private long expirationMinutes;
 
     public String generateToken(String username) {
-        var user = userAccountRepository.findByUsername(username)
+        var normalizedUsername = normalizeUsername(username);
+        var user = userAccountRepository.findByUsername(normalizedUsername)
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado: " + username));
         var now = Instant.now();
 
@@ -72,5 +73,9 @@ public class TokenService {
 
     private Long getVeterinarianId(UserAccount user) {
         return user.getVeterinarian() != null ? user.getVeterinarian().getId() : null;
+    }
+
+    private String normalizeUsername(String username) {
+        return username.trim().toLowerCase();
     }
 }

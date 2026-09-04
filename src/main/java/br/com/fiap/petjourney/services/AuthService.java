@@ -16,7 +16,8 @@ public class AuthService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        var user = userAccountRepository.findByUsername(username)
+        var normalizedUsername = normalizeUsername(username);
+        var user = userAccountRepository.findByUsername(normalizedUsername)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado: " + username));
 
         return User.withUsername(user.getUsername())
@@ -24,5 +25,9 @@ public class AuthService implements UserDetailsService {
                 .disabled(!Boolean.TRUE.equals(user.getActive()))
                 .roles(user.getRole().name())
                 .build();
+    }
+
+    private String normalizeUsername(String username) {
+        return username.trim().toLowerCase();
     }
 }

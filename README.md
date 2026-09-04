@@ -122,6 +122,7 @@ Cancelamento de consulta:
 - `GET /clinics/{id}` pode ser usado por perfis autenticados, mas o backend restringe o acesso ao escopo permitido; ADMIN_CLINICA, VETERINARIO e TUTOR nao possuem listagem global.
 - Use `POST /auth/login` como endpoint oficial de login.
 - O endpoint `POST /login` continua disponivel por compatibilidade.
+- O e-mail/username enviado no login e no primeiro acesso e normalizado com `trim().toLowerCase()`, entao maiusculas, minusculas e espacos acidentais nao alteram o usuario encontrado.
 - Envie `Authorization: Bearer TOKEN` nas rotas protegidas.
 - Use `GET /auth/me` para restaurar/validar sessao.
 - As listagens `GET /veterinarians`, `GET /tutors` e `GET /pets` retornam pagina Spring; no Mobile, leia os dados em `response.content`.
@@ -133,6 +134,8 @@ Cancelamento de consulta:
 - Tutor pode consultar prontuario e medicamento do proprio pet, mas nao pode criar, editar nem excluir dados clinicos.
 - `TutorRequest` nao recebe senha; a senha do tutor sempre e criada em `POST /auth/first-access/activate`.
 - Tutor nao pode alterar o proprio CPF pelo `PUT /tutors/{id}`.
+- O e-mail do tutor fica imutavel quando existe conta de acesso associada, pois ele e usado como username de login.
+- Ao excluir um tutor, o backend remove primeiro a conta de acesso associada. Se houver pets, consultas ou historico vinculados, o banco ainda pode bloquear a exclusao.
 - Ao cadastrar veterinario com e-mail, o backend cria uma conta `VETERINARIO` inativa, gera codigo de primeiro acesso e envia/loga o codigo.
 - O e-mail do veterinario fica imutavel quando existe conta de acesso associada, pois ele e usado como username de login.
 - Ao excluir um veterinario, o backend remove primeiro a conta de acesso associada. Se houver historico clinico vinculado, o banco ainda pode bloquear a exclusao.
