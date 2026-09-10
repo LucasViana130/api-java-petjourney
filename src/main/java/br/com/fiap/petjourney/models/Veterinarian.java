@@ -33,6 +33,10 @@ public class Veterinarian {
     @ManyToOne
     private Clinic clinic;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean active = true;
+
     public Veterinarian(VeterinarianRequest request, Clinic clinic) {
         this.name = request.name();
         this.crmv = request.crmv();
@@ -40,6 +44,7 @@ public class Veterinarian {
         this.email = request.email();
         this.specialty = request.specialty();
         this.clinic = clinic;
+        this.active = true;
     }
 
     public void updateFrom(VeterinarianRequest request, Clinic clinic) {

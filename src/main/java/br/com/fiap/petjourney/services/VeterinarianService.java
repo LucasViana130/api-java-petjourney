@@ -40,16 +40,16 @@ public class VeterinarianService {
         if (role == UserRole.ADMIN_CLINICA || role == UserRole.VETERINARIO) {
             Long clinicId = authenticatedUser.clinicId();
             if (name != null && !name.isBlank()) {
-                return repository.findByClinicIdAndNameContainingIgnoreCase(clinicId, name, pageable).map(VeterinarianResponse::fromEntity);
+                return repository.findByClinicIdAndActiveTrueAndNameContainingIgnoreCase(clinicId, name, pageable).map(VeterinarianResponse::fromEntity);
             }
-            return repository.findByClinicId(clinicId, pageable).map(VeterinarianResponse::fromEntity);
+            return repository.findByClinicIdAndActiveTrue(clinicId, pageable).map(VeterinarianResponse::fromEntity);
         }
 
         if (name != null && !name.isBlank()) {
-            return repository.findByNameContainingIgnoreCase(name, pageable).map(VeterinarianResponse::fromEntity);
+            return repository.findByActiveTrueAndNameContainingIgnoreCase(name, pageable).map(VeterinarianResponse::fromEntity);
         }
 
-        return repository.findAll(pageable).map(VeterinarianResponse::fromEntity);
+        return repository.findByActiveTrue(pageable).map(VeterinarianResponse::fromEntity);
     }
 
     public VeterinarianResponse findById(Long id) {
@@ -64,7 +64,7 @@ public class VeterinarianService {
             throw new ForbiddenOperationException("Administrador nao pode cadastrar veterinario em outra clinica");
         }
 
-        Clinic clinic = clinicRepository.findById(clinicId)
+        Clinic clinic = clinicRepository.findByIdAndActiveTrue(clinicId)
                 .orElseThrow(() -> new ResourceNotFoundException("Clinica nao encontrada"));
 
         Veterinarian veterinarian = repository.save(new Veterinarian(request, clinic));
@@ -83,7 +83,7 @@ public class VeterinarianService {
             throw new ForbiddenOperationException("Administrador nao pode mover veterinario para outra clinica");
         }
 
-        Clinic clinic = clinicRepository.findById(authenticatedUser.clinicId())
+        Clinic clinic = clinicRepository.findByIdAndActiveTrue(authenticatedUser.clinicId())
                 .orElseThrow(() -> new ResourceNotFoundException("Clinica nao encontrada"));
 
         veterinarian.updateFrom(request, clinic);
@@ -95,18 +95,18 @@ public class VeterinarianService {
     public void delete(Long id) {
         assertAdminClinic();
         Veterinarian veterinarian = findAccessibleVeterinarian(id);
-        userAccountRepository.findByVeterinarianId(veterinarian.getId())
-                .ifPresent(userAccountRepository::delete);
-        repository.delete(veterinarian);
+        userAccountRepository.deactivateVeterinarianAccount(veterinarian.getId());
+        veterinarian.setActive(false);
+        repository.save(veterinarian);
     }
 
     public Veterinarian findAccessibleVeterinarian(Long id) {
         UserRole role = authenticatedUser.role();
         if (role == UserRole.ADMIN_CLINICA || role == UserRole.VETERINARIO) {
-            return repository.findByIdAndClinicId(id, authenticatedUser.clinicId())
+            return repository.findByIdAndClinicIdAndActiveTrue(id, authenticatedUser.clinicId())
                     .orElseThrow(() -> new ResourceNotFoundException("Veterinario nao encontrado para esta clinica"));
         }
-        return repository.findById(id)
+        return repository.findByIdAndActiveTrue(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Veterinario nao encontrado"));
     }
 

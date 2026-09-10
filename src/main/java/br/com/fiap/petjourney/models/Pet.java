@@ -42,6 +42,10 @@ public class Pet {
     @ManyToOne
     private Tutor tutor;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean active = true;
+
     public Pet(PetRequest request, Tutor tutor) {
         this.name = request.name();
         this.species = request.species();
@@ -50,6 +54,7 @@ public class Pet {
         this.birthDate = request.birthDate();
         this.weight = request.weight();
         this.tutor = tutor;
+        this.active = true;
     }
 
     public void updateFrom(PetRequest request, Tutor tutor) {

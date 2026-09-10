@@ -75,15 +75,15 @@ public class AppointmentService {
     }
 
     public AppointmentResponse create(AppointmentRequest request) {
-        Pet pet = petRepository.findById(request.petId())
-                .orElseThrow(() -> new ResourceNotFoundException("Pet não encontrado"));
+        Pet pet = petRepository.findByIdAndActiveTrue(request.petId())
+                .orElseThrow(() -> new ResourceNotFoundException("Pet nao encontrado"));
 
-        Veterinarian veterinarian = veterinarianRepository.findById(request.veterinarianId())
-                .orElseThrow(() -> new ResourceNotFoundException("Veterinário não encontrado"));
+        Veterinarian veterinarian = veterinarianRepository.findByIdAndActiveTrue(request.veterinarianId())
+                .orElseThrow(() -> new ResourceNotFoundException("Veterinario nao encontrado"));
 
         Clinic clinic = request.clinicId() != null
-                ? clinicRepository.findById(request.clinicId())
-                .orElseThrow(() -> new ResourceNotFoundException("Clínica não encontrada"))
+                ? clinicRepository.findByIdAndActiveTrue(request.clinicId())
+                .orElseThrow(() -> new ResourceNotFoundException("Clinica nao encontrada"))
                 : null;
 
         assertAppointmentAccess(pet, veterinarian, clinic);
@@ -108,15 +108,15 @@ public class AppointmentService {
     public AppointmentResponse update(Long id, AppointmentRequest request) {
         Appointment appointment = findAccessibleAppointment(id);
 
-        Pet pet = petRepository.findById(request.petId())
-                .orElseThrow(() -> new ResourceNotFoundException("Pet não encontrado"));
+        Pet pet = petRepository.findByIdAndActiveTrue(request.petId())
+                .orElseThrow(() -> new ResourceNotFoundException("Pet nao encontrado"));
 
-        Veterinarian veterinarian = veterinarianRepository.findById(request.veterinarianId())
-                .orElseThrow(() -> new ResourceNotFoundException("Veterinário não encontrado"));
+        Veterinarian veterinarian = veterinarianRepository.findByIdAndActiveTrue(request.veterinarianId())
+                .orElseThrow(() -> new ResourceNotFoundException("Veterinario nao encontrado"));
 
         Clinic clinic = request.clinicId() != null
-                ? clinicRepository.findById(request.clinicId())
-                .orElseThrow(() -> new ResourceNotFoundException("Clínica não encontrada"))
+                ? clinicRepository.findByIdAndActiveTrue(request.clinicId())
+                .orElseThrow(() -> new ResourceNotFoundException("Clinica nao encontrada"))
                 : null;
 
         assertAppointmentAccess(pet, veterinarian, clinic);
@@ -131,10 +131,10 @@ public class AppointmentService {
         Appointment appointment = findAccessibleAppointment(id);
         UserRole role = authenticatedUser.role();
         if (role != UserRole.ADMIN_CLINICA && role != UserRole.VETERINARIO) {
-            throw new ForbiddenOperationException("Apenas clínica ou veterinário podem marcar consulta como concluída");
+            throw new ForbiddenOperationException("Apenas clinica ou veterinario podem marcar consulta como concluida");
         }
         if (appointment.getStatus() == AppointmentStatus.CANCELADO) {
-            throw new ForbiddenOperationException("Não é possível concluir agendamento cancelado");
+            throw new ForbiddenOperationException("Nao e possivel concluir agendamento cancelado");
         }
 
         appointment.setStatus(AppointmentStatus.REALIZADO);
@@ -145,13 +145,13 @@ public class AppointmentService {
         Appointment appointment = findAccessibleAppointment(id);
         UserRole role = authenticatedUser.role();
         if (role != UserRole.TUTOR && role != UserRole.ADMIN_CLINICA && role != UserRole.VETERINARIO) {
-            throw new ForbiddenOperationException("Perfil sem permissão para cancelar consulta");
+            throw new ForbiddenOperationException("Perfil sem permissao para cancelar consulta");
         }
         if (appointment.getStatus() == AppointmentStatus.REALIZADO) {
-            throw new ForbiddenOperationException("Não é possível cancelar consulta já concluída");
+            throw new ForbiddenOperationException("Nao e possivel cancelar consulta ja concluida");
         }
         if (!appointment.getDateTime().isAfter(LocalDateTime.now().plusHours(24))) {
-            throw new ForbiddenOperationException("Cancelamento permitido apenas com mais de 24 horas de antecedência");
+            throw new ForbiddenOperationException("Cancelamento permitido apenas com mais de 24 horas de antecedencia");
         }
 
         appointment.setStatus(AppointmentStatus.CANCELADO);
@@ -170,14 +170,14 @@ public class AppointmentService {
     }
 
     public AppointmentResponse schedule(ScheduleAppointmentRequest request) {
-        Pet pet = petRepository.findById(request.petId())
-                .orElseThrow(() -> new ResourceNotFoundException("Pet não encontrado"));
-        Veterinarian veterinarian = veterinarianRepository.findById(request.veterinarianId())
-                .orElseThrow(() -> new ResourceNotFoundException("Veterinário não encontrado"));
+        Pet pet = petRepository.findByIdAndActiveTrue(request.petId())
+                .orElseThrow(() -> new ResourceNotFoundException("Pet nao encontrado"));
+        Veterinarian veterinarian = veterinarianRepository.findByIdAndActiveTrue(request.veterinarianId())
+                .orElseThrow(() -> new ResourceNotFoundException("Veterinario nao encontrado"));
 
         Long clinicId = resolveClinicIdForSchedule(request, veterinarian);
-        Clinic clinic = clinicRepository.findById(clinicId)
-                .orElseThrow(() -> new ResourceNotFoundException("Clínica não encontrada"));
+        Clinic clinic = clinicRepository.findByIdAndActiveTrue(clinicId)
+                .orElseThrow(() -> new ResourceNotFoundException("Clinica nao encontrada"));
 
         assertAppointmentAccess(pet, veterinarian, clinic);
         validateAvailableSlot(veterinarian.getId(), request.dateTime());
@@ -198,17 +198,17 @@ public class AppointmentService {
 
     public Appointment findAccessibleAppointment(Long id) {
         Appointment appointment = repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Agendamento não encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Agendamento nao encontrado"));
 
         UserRole role = authenticatedUser.role();
         if (role == UserRole.TUTOR && !appointment.getPet().getTutor().getId().equals(authenticatedUser.tutorId())) {
-            throw new ForbiddenOperationException("Tutor não pode acessar agendamento de outro tutor");
+            throw new ForbiddenOperationException("Tutor nao pode acessar agendamento de outro tutor");
         }
         if (role == UserRole.ADMIN_CLINICA && !appointment.getClinic().getId().equals(authenticatedUser.clinicId())) {
-            throw new ForbiddenOperationException("Administrador não pode acessar agendamento de outra clínica");
+            throw new ForbiddenOperationException("Administrador nao pode acessar agendamento de outra clinica");
         }
         if (role == UserRole.VETERINARIO && !appointment.getVeterinarian().getId().equals(authenticatedUser.veterinarianId())) {
-            throw new ForbiddenOperationException("Veterinário não pode acessar agendamento de outro veterinário");
+            throw new ForbiddenOperationException("Veterinario nao pode acessar agendamento de outro veterinario");
         }
 
         return appointment;
@@ -220,53 +220,53 @@ public class AppointmentService {
             return authenticatedUser.clinicId();
         }
         if (request.clinicId() == null) {
-            throw new ForbiddenOperationException("A clínica é obrigatória para agendamento feito pelo tutor");
+            throw new ForbiddenOperationException("A clinica e obrigatoria para agendamento feito pelo tutor");
         }
         if (veterinarian.getClinic() == null || !veterinarian.getClinic().getId().equals(request.clinicId())) {
-            throw new ForbiddenOperationException("Veterinário não pertence à clínica selecionada");
+            throw new ForbiddenOperationException("Veterinario nao pertence a clinica selecionada");
         }
         return request.clinicId();
     }
 
     private void assertAppointmentAccess(Pet pet, Veterinarian veterinarian, Clinic clinic) {
         if (clinic == null) {
-            throw new ForbiddenOperationException("Agendamento deve estar vinculado a uma clínica");
+            throw new ForbiddenOperationException("Agendamento deve estar vinculado a uma clinica");
         }
         if (veterinarian.getClinic() == null || !veterinarian.getClinic().getId().equals(clinic.getId())) {
-            throw new ForbiddenOperationException("Veterinário não pertence à clínica do agendamento");
+            throw new ForbiddenOperationException("Veterinario nao pertence a clinica do agendamento");
         }
 
         UserRole role = authenticatedUser.role();
         if (role == UserRole.ADMIN_SISTEMA) {
-            throw new ForbiddenOperationException("Administrador do sistema não realiza agendamentos clínicos");
+            throw new ForbiddenOperationException("Administrador do sistema nao realiza agendamentos clinicos");
         }
         if (role == UserRole.TUTOR && !pet.getTutor().getId().equals(authenticatedUser.tutorId())) {
-            throw new ForbiddenOperationException("Tutor não pode agendar para pet de outro tutor");
+            throw new ForbiddenOperationException("Tutor nao pode agendar para pet de outro tutor");
         }
         if (role == UserRole.TUTOR && !clinic.getId().equals(authenticatedUser.clinicId())) {
-            throw new ForbiddenOperationException("Tutor não pode agendar em clínica sem vínculo");
+            throw new ForbiddenOperationException("Tutor nao pode agendar em clinica sem vinculo");
         }
         if (role == UserRole.ADMIN_CLINICA && !clinic.getId().equals(authenticatedUser.clinicId())) {
-            throw new ForbiddenOperationException("Administrador não pode agendar em outra clínica");
+            throw new ForbiddenOperationException("Administrador nao pode agendar em outra clinica");
         }
         if ((role == UserRole.ADMIN_CLINICA || role == UserRole.VETERINARIO)
                 && (pet.getTutor().getClinic() == null || !clinic.getId().equals(pet.getTutor().getClinic().getId()))) {
-            throw new ForbiddenOperationException("Pet não pertence à carteira de clientes desta clínica");
+            throw new ForbiddenOperationException("Pet nao pertence a carteira de clientes desta clinica");
         }
         if (role == UserRole.VETERINARIO && !veterinarian.getId().equals(authenticatedUser.veterinarianId())) {
-            throw new ForbiddenOperationException("Veterinário só pode criar agendamento para si mesmo");
+            throw new ForbiddenOperationException("Veterinario so pode criar agendamento para si mesmo");
         }
     }
 
     private void validateScheduleConflict(Long veterinarianId, LocalDateTime dateTime, Long ignoredId) {
         if (repository.existsScheduleConflict(veterinarianId, dateTime, ignoredId)) {
-            throw new ForbiddenOperationException("Veterinário já possui agendamento neste horário");
+            throw new ForbiddenOperationException("Veterinario ja possui agendamento neste horario");
         }
     }
 
     private void validateAvailableSlot(Long veterinarianId, LocalDateTime dateTime) {
         if (!availabilityService.isSlotAvailable(veterinarianId, dateTime)) {
-            throw new ForbiddenOperationException("Horário não está disponível para este veterinário");
+            throw new ForbiddenOperationException("Horario nao esta disponivel para este veterinario");
         }
     }
 

@@ -9,6 +9,7 @@ import br.com.fiap.petjourney.models.Tutor;
 import br.com.fiap.petjourney.models.UserAccount;
 import br.com.fiap.petjourney.models.enums.UserRole;
 import br.com.fiap.petjourney.repositories.ClinicRepository;
+import br.com.fiap.petjourney.repositories.PetRepository;
 import br.com.fiap.petjourney.repositories.TutorRepository;
 import br.com.fiap.petjourney.repositories.UserAccountRepository;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class TutorService {
 
     private final TutorRepository repository;
     private final ClinicRepository clinicRepository;
+    private final PetRepository petRepository;
     private final UserAccountRepository userAccountRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
@@ -38,7 +40,7 @@ public class TutorService {
     public Page<TutorResponse> findAll(String name, Pageable pageable) {
         UserRole role = authenticatedUser.role();
         if (role == UserRole.TUTOR) {
-            return repository.findById(authenticatedUser.tutorId())
+            return repository.findByIdAndActiveTrue(authenticatedUser.tutorId())
                     .map(tutor -> new org.springframework.data.domain.PageImpl<>(java.util.List.of(TutorResponse.fromEntity(tutor)), pageable, 1))
                     .orElseThrow(() -> new ResourceNotFoundException("Tutor autenticado não encontrado"));
         }
@@ -52,10 +54,10 @@ public class TutorService {
         }
 
         if (name != null && !name.isBlank()) {
-            return repository.findByNameContainingIgnoreCase(name, pageable).map(TutorResponse::fromEntity);
+            return repository.findByActiveTrueAndNameContainingIgnoreCase(name, pageable).map(TutorResponse::fromEntity);
         }
 
-        return repository.findAll(pageable).map(TutorResponse::fromEntity);
+        return repository.findByActiveTrue(pageable).map(TutorResponse::fromEntity);
     }
 
     public TutorResponse findById(Long id) {
@@ -90,9 +92,10 @@ public class TutorService {
         if (authenticatedUser.role() != UserRole.ADMIN_CLINICA) {
             throw new ForbiddenOperationException("Apenas a clínica pode excluir tutores clientes");
         }
-        userAccountRepository.findByTutorId(tutor.getId())
-                .ifPresent(userAccountRepository::delete);
-        repository.delete(tutor);
+        userAccountRepository.deactivateTutorAccount(tutor.getId());
+        petRepository.deactivateByTutorId(tutor.getId());
+        tutor.setActive(false);
+        repository.save(tutor);
     }
 
     public boolean isLinkedToAuthenticatedClinic(Long tutorId) {
@@ -104,7 +107,7 @@ public class TutorService {
     public Tutor createTutorForAuthenticatedClinic(TutorRequest request) {
         assertClinicStaff();
 
-        Clinic clinic = clinicRepository.findById(authenticatedUser.clinicId())
+        Clinic clinic = clinicRepository.findByIdAndActiveTrue(authenticatedUser.clinicId())
                 .orElseThrow(() -> new ResourceNotFoundException("Clínica autenticada não encontrada"));
 
         Tutor tutor = repository.save(new Tutor(request, clinic));
@@ -118,7 +121,7 @@ public class TutorService {
             if (!id.equals(authenticatedUser.tutorId())) {
                 throw new ForbiddenOperationException("Tutor não pode acessar dados de outro tutor");
             }
-            return repository.findById(id)
+            return repository.findByIdAndActiveTrue(id)
                     .orElseThrow(() -> new ResourceNotFoundException("Tutor não encontrado"));
         }
 
@@ -127,7 +130,7 @@ public class TutorService {
                     .orElseThrow(() -> new ResourceNotFoundException("Tutor não encontrado para esta clínica"));
         }
 
-        return repository.findById(id)
+        return repository.findByIdAndActiveTrue(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tutor não encontrado"));
     }
 

@@ -57,10 +57,10 @@ public class MedicationService {
     public MedicationResponse create(MedicationRequest request) {
         validateMedicationPeriod(request.startDate(), request.endDate());
 
-        Pet pet = petRepository.findById(request.petId())
+        Pet pet = petRepository.findByIdAndActiveTrue(request.petId())
                 .orElseThrow(() -> new ResourceNotFoundException("Pet nao encontrado"));
 
-        Veterinarian veterinarian = veterinarianRepository.findById(request.veterinarianId())
+        Veterinarian veterinarian = veterinarianRepository.findByIdAndActiveTrue(request.veterinarianId())
                 .orElseThrow(() -> new ResourceNotFoundException("Veterinario nao encontrado"));
 
         assertWriteAccess(pet, veterinarian);
@@ -72,10 +72,10 @@ public class MedicationService {
         Medication medication = findAccessibleMedication(id);
         validateMedicationPeriod(request.startDate(), request.endDate());
 
-        Pet pet = petRepository.findById(request.petId())
+        Pet pet = petRepository.findByIdAndActiveTrue(request.petId())
                 .orElseThrow(() -> new ResourceNotFoundException("Pet nao encontrado"));
 
-        Veterinarian veterinarian = veterinarianRepository.findById(request.veterinarianId())
+        Veterinarian veterinarian = veterinarianRepository.findByIdAndActiveTrue(request.veterinarianId())
                 .orElseThrow(() -> new ResourceNotFoundException("Veterinario nao encontrado"));
 
         assertWriteAccess(pet, veterinarian);

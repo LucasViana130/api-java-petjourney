@@ -32,7 +32,7 @@ public class SystemAdminService {
             throw new ForbiddenOperationException("Já existe usuário cadastrado com este e-mail");
         }
 
-        var clinic = clinicRepository.findById(clinicId)
+        var clinic = clinicRepository.findByIdAndActiveTrue(clinicId)
                 .orElseThrow(() -> new ResourceNotFoundException("Clínica não encontrada"));
 
         var user = UserAccount.builder()

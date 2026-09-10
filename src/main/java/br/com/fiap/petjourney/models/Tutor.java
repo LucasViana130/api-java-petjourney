@@ -37,12 +37,17 @@ public class Tutor {
     @OneToMany(mappedBy = "tutor")
     private List<Pet> pets;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean active = true;
+
     public Tutor(TutorRequest request, Clinic clinic) {
         this.name = request.name();
         this.cpf = request.cpf();
         this.phone = request.phone();
         this.email = request.email();
         this.clinic = clinic;
+        this.active = true;
     }
 
     public void updateFrom(TutorRequest request) {

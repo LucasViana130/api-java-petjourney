@@ -30,12 +30,17 @@ public class Clinic {
 
     private String address;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean active = true;
+
     public Clinic(ClinicRequest request) {
         this.name = request.name();
         this.cnpj = request.cnpj();
         this.phone = request.phone();
         this.email = request.email();
         this.address = request.address();
+        this.active = true;
     }
 
     public void updateFrom(ClinicRequest request) {

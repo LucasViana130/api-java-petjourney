@@ -97,10 +97,10 @@ public class MedicalRecordService {
 
     @CacheEvict(value = "medicalRecords", allEntries = true)
     public MedicalRecordResponse create(MedicalRecordRequest request) {
-        Pet pet = petRepository.findById(request.petId())
+        Pet pet = petRepository.findByIdAndActiveTrue(request.petId())
                 .orElseThrow(() -> new ResourceNotFoundException("Pet nao encontrado"));
 
-        Veterinarian veterinarian = veterinarianRepository.findById(request.veterinarianId())
+        Veterinarian veterinarian = veterinarianRepository.findByIdAndActiveTrue(request.veterinarianId())
                 .orElseThrow(() -> new ResourceNotFoundException("Veterinario nao encontrado"));
 
         assertWriteAccess(pet, veterinarian);
@@ -113,10 +113,10 @@ public class MedicalRecordService {
     public MedicalRecordResponse update(Long id, MedicalRecordRequest request) {
         MedicalRecord medicalRecord = findAccessibleMedicalRecord(id);
 
-        Pet pet = petRepository.findById(request.petId())
+        Pet pet = petRepository.findByIdAndActiveTrue(request.petId())
                 .orElseThrow(() -> new ResourceNotFoundException("Pet nao encontrado"));
 
-        Veterinarian veterinarian = veterinarianRepository.findById(request.veterinarianId())
+        Veterinarian veterinarian = veterinarianRepository.findByIdAndActiveTrue(request.veterinarianId())
                 .orElseThrow(() -> new ResourceNotFoundException("Veterinario nao encontrado"));
 
         assertWriteAccess(pet, veterinarian);

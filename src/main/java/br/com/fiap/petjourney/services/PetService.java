@@ -34,9 +34,9 @@ public class PetService {
         if (role == UserRole.TUTOR) {
             Long tutorId = authenticatedUser.tutorId();
             if (name != null && !name.isBlank()) {
-                return repository.findByTutorIdAndNameContainingIgnoreCase(tutorId, name, pageable).map(PetResponse::fromEntity);
+                return repository.findByTutorIdAndActiveTrueAndNameContainingIgnoreCase(tutorId, name, pageable).map(PetResponse::fromEntity);
             }
-            return repository.findByTutorId(tutorId, pageable).map(PetResponse::fromEntity);
+            return repository.findByTutorIdAndActiveTrue(tutorId, pageable).map(PetResponse::fromEntity);
         }
 
         if (role == UserRole.ADMIN_CLINICA || role == UserRole.VETERINARIO) {
@@ -48,10 +48,10 @@ public class PetService {
         }
 
         if (name != null && !name.isBlank()) {
-            return repository.findByNameContainingIgnoreCase(name, pageable).map(PetResponse::fromEntity);
+            return repository.findByActiveTrueAndNameContainingIgnoreCase(name, pageable).map(PetResponse::fromEntity);
         }
 
-        return repository.findAll(pageable).map(PetResponse::fromEntity);
+        return repository.findByActiveTrue(pageable).map(PetResponse::fromEntity);
     }
 
     @Cacheable(value = "pets", key = "{@authenticatedUserService.username(), 'id', #id}")
@@ -84,20 +84,21 @@ public class PetService {
     })
     public void delete(Long id) {
         Pet pet = findAccessiblePet(id);
-        repository.delete(pet);
+        pet.setActive(false);
+        repository.save(pet);
     }
 
     public Pet findAccessiblePet(Long id) {
         UserRole role = authenticatedUser.role();
         if (role == UserRole.TUTOR) {
-            return repository.findByIdAndTutorId(id, authenticatedUser.tutorId())
+            return repository.findByIdAndTutorIdAndActiveTrue(id, authenticatedUser.tutorId())
                     .orElseThrow(() -> new ResourceNotFoundException("Pet não encontrado"));
         }
         if (role == UserRole.ADMIN_CLINICA || role == UserRole.VETERINARIO) {
             return repository.findPatientByIdAndClinicId(id, authenticatedUser.clinicId())
                     .orElseThrow(() -> new ResourceNotFoundException("Pet não encontrado para esta clínica"));
         }
-        return repository.findById(id)
+        return repository.findByIdAndActiveTrue(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Pet não encontrado"));
     }
 
@@ -111,7 +112,7 @@ public class PetService {
             if (requestTutorId == null) {
                 throw new ForbiddenOperationException("O tutor é obrigatório para cadastro de pet pela clínica");
             }
-            Tutor tutor = tutorRepository.findById(requestTutorId)
+            Tutor tutor = tutorRepository.findByIdAndActiveTrue(requestTutorId)
                     .orElseThrow(() -> new ResourceNotFoundException("Tutor não encontrado"));
             if (tutor.getClinic() == null || !tutor.getClinic().getId().equals(authenticatedUser.clinicId())) {
                 throw new ForbiddenOperationException("Clínica não pode alterar pet de tutor sem vínculo");

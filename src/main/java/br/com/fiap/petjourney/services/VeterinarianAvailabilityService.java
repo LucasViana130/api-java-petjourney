@@ -35,7 +35,7 @@ public class VeterinarianAvailabilityService {
     public Page<VeterinarianAvailabilityResponse> findByVeterinarian(Long veterinarianId, LocalDateTime start, LocalDateTime end, Pageable pageable) {
         validateDateRange(start, end);
 
-        Veterinarian veterinarian = veterinarianRepository.findById(veterinarianId)
+        Veterinarian veterinarian = veterinarianRepository.findByIdAndActiveTrue(veterinarianId)
                 .orElseThrow(() -> new ResourceNotFoundException("Veterinário não encontrado"));
         assertVeterinarianClinicAccess(veterinarian);
         return repository.findByVeterinarianIdAndStartTimeBetween(veterinarianId, start, end, pageable)
@@ -44,7 +44,7 @@ public class VeterinarianAvailabilityService {
 
     public VeterinarianAvailabilityResponse create(VeterinarianAvailabilityRequest request) {
         Long veterinarianId = resolveVeterinarianIdForWrite(request.veterinarianId());
-        Veterinarian veterinarian = veterinarianRepository.findById(veterinarianId)
+        Veterinarian veterinarian = veterinarianRepository.findByIdAndActiveTrue(veterinarianId)
                 .orElseThrow(() -> new ResourceNotFoundException("Veterinário não encontrado"));
 
         assertVeterinarianClinicAccess(veterinarian);

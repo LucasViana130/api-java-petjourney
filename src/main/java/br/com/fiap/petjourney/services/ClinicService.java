@@ -7,11 +7,16 @@ import br.com.fiap.petjourney.exceptions.ResourceNotFoundException;
 import br.com.fiap.petjourney.models.Clinic;
 import br.com.fiap.petjourney.models.enums.UserRole;
 import br.com.fiap.petjourney.repositories.ClinicRepository;
+import br.com.fiap.petjourney.repositories.PetRepository;
+import br.com.fiap.petjourney.repositories.TutorRepository;
+import br.com.fiap.petjourney.repositories.UserAccountRepository;
+import br.com.fiap.petjourney.repositories.VeterinarianRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -20,13 +25,17 @@ import java.util.List;
 public class ClinicService {
 
     private final ClinicRepository repository;
+    private final TutorRepository tutorRepository;
+    private final PetRepository petRepository;
+    private final VeterinarianRepository veterinarianRepository;
+    private final UserAccountRepository userAccountRepository;
     private final AuthenticatedUserService authenticatedUser;
 
     public Page<ClinicResponse> findAll(Pageable pageable) {
         UserRole role = authenticatedUser.role();
         if (role == UserRole.ADMIN_CLINICA || role == UserRole.VETERINARIO) {
-            Clinic clinic = repository.findById(authenticatedUser.clinicId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Clínica autenticada não encontrada"));
+            Clinic clinic = repository.findByIdAndActiveTrue(authenticatedUser.clinicId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Clinica autenticada nao encontrada"));
             return new PageImpl<>(List.of(ClinicResponse.fromEntity(clinic)), pageable, 1);
         }
         if (role == UserRole.TUTOR) {
@@ -37,19 +46,19 @@ public class ClinicService {
             return new PageImpl<>(clinics, pageable, clinics.size());
         }
 
-        return repository.findAll(pageable).map(ClinicResponse::fromEntity);
+        return repository.findByActiveTrue(pageable).map(ClinicResponse::fromEntity);
     }
 
     public ClinicResponse findById(Long id) {
         assertClinicAccess(id);
-        return repository.findById(id)
+        return repository.findByIdAndActiveTrue(id)
                 .map(ClinicResponse::fromEntity)
-                .orElseThrow(() -> new ResourceNotFoundException("Clínica não encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("Clinica nao encontrada"));
     }
 
     public ClinicResponse create(ClinicRequest request) {
         if (authenticatedUser.role() != UserRole.ADMIN_SISTEMA) {
-            throw new ForbiddenOperationException("Apenas administradores do sistema podem cadastrar clínicas");
+            throw new ForbiddenOperationException("Apenas administradores do sistema podem cadastrar clinicas");
         }
         return ClinicResponse.fromEntity(repository.save(new Clinic(request)));
     }
@@ -57,38 +66,47 @@ public class ClinicService {
     public ClinicResponse update(Long id, ClinicRequest request) {
         assertSystemAdmin();
         assertClinicAccess(id);
-        Clinic clinic = repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Clínica não encontrada"));
+        Clinic clinic = repository.findByIdAndActiveTrue(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Clinica nao encontrada"));
 
         clinic.updateFrom(request);
 
         return ClinicResponse.fromEntity(repository.save(clinic));
     }
 
+    @Transactional
     public void delete(Long id) {
         assertSystemAdmin();
         assertClinicAccess(id);
-        if (!repository.existsById(id)) {
-            throw new ResourceNotFoundException("Clínica não encontrada");
-        }
 
-        repository.deleteById(id);
+        Clinic clinic = repository.findByIdAndActiveTrue(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Clinica nao encontrada"));
+
+        userAccountRepository.deactivateClinicAccounts(id);
+        userAccountRepository.deactivateTutorAccountsByClinicId(id);
+        userAccountRepository.deactivateVeterinarianAccountsByClinicId(id);
+        petRepository.deactivateByClinicId(id);
+        tutorRepository.deactivateByClinicId(id);
+        veterinarianRepository.deactivateByClinicId(id);
+
+        clinic.setActive(false);
+        repository.save(clinic);
     }
 
     private void assertClinicAccess(Long clinicId) {
         UserRole role = authenticatedUser.role();
         if ((role == UserRole.ADMIN_CLINICA || role == UserRole.VETERINARIO)
                 && !clinicId.equals(authenticatedUser.clinicId())) {
-            throw new ForbiddenOperationException("Usuário não pode acessar dados de outra clínica");
+            throw new ForbiddenOperationException("Usuario nao pode acessar dados de outra clinica");
         }
         if (role == UserRole.TUTOR && !clinicId.equals(authenticatedUser.clinicId())) {
-            throw new ForbiddenOperationException("Tutor não pode acessar clínica sem vínculo");
+            throw new ForbiddenOperationException("Tutor nao pode acessar clinica sem vinculo");
         }
     }
 
     private void assertSystemAdmin() {
         if (authenticatedUser.role() != UserRole.ADMIN_SISTEMA) {
-            throw new ForbiddenOperationException("Apenas administradores do sistema podem alterar clínicas");
+            throw new ForbiddenOperationException("Apenas administradores do sistema podem alterar clinicas");
         }
     }
 }
