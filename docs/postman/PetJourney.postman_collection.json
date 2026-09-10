@@ -90,6 +90,7 @@
           "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
             "pm.test('login admin clinica 200', () => pm.response.to.have.status(200));",
             "const json = pm.response.json();",
+            "pm.test('token admin clinica recebido', () => pm.expect(json.token).to.be.a('string').and.not.empty);",
             "pm.collectionVariables.set('token', json.token);",
             "pm.collectionVariables.set('adminClinicaToken', json.token);",
             "pm.collectionVariables.set('clinicId', json.clinicId || '1');"
@@ -219,6 +220,7 @@
             "pm.collectionVariables.set('tutorId', pm.response.json().id);"
           ]}}],
           "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{adminClinicaToken}}", "type": "string"}]},
             "method": "POST",
             "header": [{"key": "Content-Type", "value": "application/json"}],
             "body": {"mode": "raw", "raw": "{\n  \"name\": \"Tutor Postman {{runId}}\",\n  \"cpf\": \"{{tutorCpf}}\",\n  \"phone\": \"11999999999\",\n  \"email\": \"{{tutorEmail}}\"\n}"},
