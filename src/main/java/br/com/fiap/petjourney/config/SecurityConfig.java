@@ -4,8 +4,6 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.proc.SecurityContext;
-import jakarta.servlet.http.HttpServletResponse;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
@@ -40,7 +38,6 @@ import java.util.List;
 
 @Configuration
 @EnableMethodSecurity
-@Slf4j
 public class SecurityConfig {
 
     @Bean
@@ -58,15 +55,6 @@ public class SecurityConfig {
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(
                         jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())
                 ))
-                .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint((request, response, authException) -> {
-                    log.warn(
-                            "Requisicao nao autenticada. path={}, authorizationHeaderPresent={}, message={}",
-                            request.getRequestURI(),
-                            request.getHeader("Authorization") != null,
-                            authException.getMessage()
-                    );
-                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
-                }))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .build();
     }

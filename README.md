@@ -136,10 +136,11 @@ $env:MAIL_ENABLED="false"
 
 Nesse modo, os e-mails aparecem no log da API, incluindo codigo de primeiro acesso.
 
-Para envio real com Gmail SMTP, use senha de app do Google, nunca a senha normal da conta:
+Para envio real local via SMTP, use senha de app do Google, nunca a senha normal da conta:
 
 ```powershell
 $env:MAIL_ENABLED="true"
+$env:MAIL_PROVIDER="smtp"
 $env:MAIL_HOST="smtp.gmail.com"
 $env:MAIL_PORT="587"
 $env:MAIL_USERNAME="seuemail@gmail.com"
@@ -156,6 +157,15 @@ $env:MAIL_SMTP_WRITE_TIMEOUT="5000"
 No IntelliJ, coloque as variaveis em `Run -> Edit Configurations -> PetJourneyApplication -> Environment variables`, separadas por ponto e virgula e sem `$env:`.
 
 O envio SMTP roda em background. O cadastro de tutor/veterinario nao fica preso esperando o Gmail; confirme sucesso ou falha do envio no log da API.
+
+Para testar localmente com Brevo API, use:
+
+```powershell
+$env:MAIL_ENABLED="true"
+$env:MAIL_PROVIDER="brevo"
+$env:MAIL_FROM="PetJourney <seuemail@gmail.com>"
+$env:BREVO_API_KEY="sua_api_key_da_brevo"
+```
 
 ### 5. Rodar API
 
@@ -236,10 +246,30 @@ Se o Railway nao aceitar multiplas linhas, substitua as quebras por `\n`. O back
 
 ### 4. E-mail real no Railway
 
-Para que o e-mail seja enviado de verdade, configure:
+No Railway, prefira Brevo por API HTTP. SMTP externo pode dar timeout em hospedagens cloud, enquanto a API HTTP usa HTTPS/443.
 
 ```properties
 MAIL_ENABLED=true
+MAIL_PROVIDER=brevo
+MAIL_FROM=PetJourney <seuemail@gmail.com>
+BREVO_API_KEY=sua_api_key_da_brevo
+BREVO_API_URL=https://api.brevo.com/v3/smtp/email
+BREVO_TIMEOUT_MS=10000
+```
+
+Passo a passo na Brevo:
+
+1. Crie uma conta em `brevo.com`.
+2. Valide seu proprio e-mail como remetente.
+3. Crie uma API key em `SMTP & API`.
+4. Configure `BREVO_API_KEY` no Railway.
+5. Configure `MAIL_FROM` com o mesmo e-mail remetente validado.
+
+SMTP continua suportado para teste local ou outro provedor:
+
+```properties
+MAIL_ENABLED=true
+MAIL_PROVIDER=smtp
 MAIL_HOST=smtp.gmail.com
 MAIL_PORT=587
 MAIL_USERNAME=seuemail@gmail.com
@@ -248,23 +278,6 @@ MAIL_FROM=PetJourney <seuemail@gmail.com>
 MAIL_SMTP_AUTH=true
 MAIL_SMTP_STARTTLS=true
 MAIL_SMTP_SSL=false
-MAIL_SMTP_CONNECTION_TIMEOUT=5000
-MAIL_SMTP_TIMEOUT=5000
-MAIL_SMTP_WRITE_TIMEOUT=5000
-```
-
-Se a porta `587` com STARTTLS der timeout no Railway, teste Gmail com SSL direto na porta `465`:
-
-```properties
-MAIL_ENABLED=true
-MAIL_HOST=smtp.gmail.com
-MAIL_PORT=465
-MAIL_USERNAME=seuemail@gmail.com
-MAIL_PASSWORD=sua_senha_de_app_do_google
-MAIL_FROM=PetJourney <seuemail@gmail.com>
-MAIL_SMTP_AUTH=true
-MAIL_SMTP_STARTTLS=false
-MAIL_SMTP_SSL=true
 MAIL_SMTP_CONNECTION_TIMEOUT=5000
 MAIL_SMTP_TIMEOUT=5000
 MAIL_SMTP_WRITE_TIMEOUT=5000
@@ -413,11 +426,13 @@ Body:
 Com `MAIL_ENABLED=true`, o log deve mostrar:
 
 ```text
-Enviando e-mail PetJourney via SMTP
-E-mail PetJourney enviado para ...
+Enviando e-mail PetJourney via Brevo
+E-mail PetJourney enviado via Brevo para ...
 ```
 
-Se aparecer `Falha ao enviar e-mail PetJourney`, revise `MAIL_USERNAME`, `MAIL_PASSWORD` com senha de app do Google, `MAIL_FROM` e se a conta Google permite SMTP com senha de app.
+Se aparecer `Falha ao enviar e-mail PetJourney via Brevo`, revise `MAIL_PROVIDER=brevo`, `BREVO_API_KEY` e se o e-mail usado em `MAIL_FROM` foi validado como remetente na Brevo.
+
+Para teste no Railway, use Brevo por API HTTP. O SMTP do Gmail pode sofrer timeout em hospedagens cloud, mesmo com senha de app correta.
 
 Com `MAIL_ENABLED=false`, o log deve mostrar:
 
@@ -454,10 +469,11 @@ JWT_ISSUER=petjourney-api
 JWT_EXPIRATION_MINUTES=60
 ```
 
-### E-mail SMTP
+### E-mail
 
 ```properties
 MAIL_ENABLED=false
+MAIL_PROVIDER=smtp
 MAIL_HOST=
 MAIL_PORT=587
 MAIL_USERNAME=
@@ -466,6 +482,12 @@ MAIL_FROM=no-reply@petjourney.com
 MAIL_SMTP_AUTH=true
 MAIL_SMTP_STARTTLS=true
 MAIL_SMTP_SSL=false
+MAIL_SMTP_CONNECTION_TIMEOUT=5000
+MAIL_SMTP_TIMEOUT=5000
+MAIL_SMTP_WRITE_TIMEOUT=5000
+BREVO_API_KEY=
+BREVO_API_URL=https://api.brevo.com/v3/smtp/email
+BREVO_TIMEOUT_MS=10000
 ```
 
 ### Performance/runtime
@@ -486,7 +508,7 @@ SPRING_JMX_ENABLED=false
 
 - Nunca versionar senhas, API keys, `.env`, `app.key` ou `app.pub`.
 - Use `.env.example` apenas como referencia; ele nao contem credenciais reais.
-- O front/mobile nunca envia e-mail diretamente; ele chama a API e o backend envia pelo SMTP configurado.
+- O front/mobile nunca envia e-mail diretamente; ele chama a API e o backend envia pelo provedor configurado (`brevo` ou `smtp`).
 - `POST /auth/login` e o endpoint oficial de login.
 - `POST /login` continua disponivel por compatibilidade.
 - O username/e-mail no login e no primeiro acesso e normalizado com `trim().toLowerCase()`.

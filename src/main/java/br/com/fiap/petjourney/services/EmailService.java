@@ -22,9 +22,13 @@ public class EmailService {
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     private final SmtpEmailSender smtpEmailSender;
+    private final BrevoEmailSender brevoEmailSender;
 
     @Value("${petjourney.mail.enabled:false}")
     private boolean mailEnabled;
+
+    @Value("${petjourney.mail.provider:smtp}")
+    private String mailProvider;
 
     @Value("${petjourney.mail.from:no-reply@petjourney.com}")
     private String from;
@@ -83,6 +87,11 @@ public class EmailService {
                     Conteudo:
                     {}
                     """, to, from, subject, body);
+            return;
+        }
+
+        if ("brevo".equalsIgnoreCase(mailProvider)) {
+            brevoEmailSender.send(from, to, subject, body);
             return;
         }
 
