@@ -1,7 +1,7 @@
 {
   "info": {
     "_postman_id": "5d2e1f52-8a9d-4dd2-9f86-2e6f7e8a9b10",
-    "name": "PetJourney API - Entrega",
+    "name": "PetJourney API - testes",
     "description": "Collection completa para testar a API PetJourney. A variavel baseUrl aponta para o Railway de producao; altere para http://localhost:8080 para teste local.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
