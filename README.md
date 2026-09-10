@@ -1,6 +1,192 @@
 # PetJourney
 
-## Configuracao local
+## Como executar localmente
+
+### Requisitos
+
+- Java 17
+- Maven
+- Docker Desktop ou PostgreSQL local
+- OpenSSL para gerar as chaves RSA
+
+### 1. Subir o PostgreSQL
+
+O projeto usa PostgreSQL em `localhost:5433`, banco `petjourney`, usuario `postgres` e senha `postgres` por padrao.
+
+```powershell
+docker compose up -d
+```
+
+Se quiser conferir se o container esta rodando:
+
+```powershell
+docker compose ps
+```
+
+### 2. Gerar as chaves JWT RSA
+
+As chaves nao ficam no Git por seguranca. Gere antes de iniciar a API:
+
+```powershell
+openssl genpkey -algorithm RSA -out src/main/resources/app.key -pkeyopt rsa_keygen_bits:2048
+openssl rsa -in src/main/resources/app.key -pubout -out src/main/resources/app.pub
+```
+
+Os arquivos esperados sao:
+
+```text
+src/main/resources/app.key
+src/main/resources/app.pub
+```
+
+### 3. Configurar o banco
+
+Se estiver usando o `compose.yaml` sem alterar nada, nao precisa configurar variaveis. A API ja usa:
+
+```properties
+DB_URL=jdbc:postgresql://localhost:5433/petjourney
+DB_USERNAME=postgres
+DB_PASSWORD=postgres
+```
+
+Para usar outra senha ou URL, configure antes de iniciar:
+
+```powershell
+$env:DB_URL="jdbc:postgresql://localhost:5433/petjourney"
+$env:DB_USERNAME="postgres"
+$env:DB_PASSWORD="sua_senha_local"
+```
+
+Se mudar a senha do container, use tambem:
+
+```powershell
+$env:POSTGRES_PASSWORD="sua_senha_local"
+docker compose up -d
+```
+
+### 4. Configurar e-mail
+
+Para entrega local sem envio real, mantenha:
+
+```powershell
+$env:MAIL_ENABLED="false"
+```
+
+Nesse modo, o codigo de primeiro acesso aparece no log da API.
+
+Para envio real com Gmail, use uma senha de app do Google. Nao use a senha normal da conta:
+
+```powershell
+$env:MAIL_ENABLED="true"
+$env:MAIL_HOST="smtp.gmail.com"
+$env:MAIL_PORT="587"
+$env:MAIL_USERNAME="seuemail@gmail.com"
+$env:MAIL_PASSWORD="sua_senha_de_app_do_google"
+$env:MAIL_FROM="PetJourney <seuemail@gmail.com>"
+$env:MAIL_SMTP_AUTH="true"
+$env:MAIL_SMTP_STARTTLS="true"
+```
+
+No IntelliJ, coloque essas variaveis em `Run -> Edit Configurations -> PetJourneyApplication -> Environment variables`, sem `$env:` e separadas por ponto e virgula:
+
+```text
+MAIL_ENABLED=true;MAIL_HOST=smtp.gmail.com;MAIL_PORT=587;MAIL_USERNAME=seuemail@gmail.com;MAIL_PASSWORD=sua_senha_de_app_do_google;MAIL_FROM=PetJourney <seuemail@gmail.com>;MAIL_SMTP_AUTH=true;MAIL_SMTP_STARTTLS=true
+```
+
+### 5. Rodar a API
+
+Pelo terminal:
+
+```powershell
+mvn spring-boot:run
+```
+
+Ou pelo IntelliJ, execute a classe `PetJourneyApplication`.
+
+Quando subir corretamente, o log deve mostrar:
+
+```text
+Tomcat started on port 8080
+Started PetJourneyApplication
+```
+
+Swagger:
+
+```text
+http://localhost:8080/swagger-ui.html
+```
+
+### 6. Login inicial
+
+Usuarios seed para teste:
+
+```text
+ADMIN_SISTEMA: admin.sistema@petjourney.com / 123456
+ADMIN_CLINICA: admin.petfeliz@petjourney.com / 123456
+VETERINARIO: joao@petjourney.com / 123456
+TUTOR: carlos@petjourney.com / 123456
+```
+
+Endpoint oficial de login:
+
+```http
+POST http://localhost:8080/auth/login
+```
+
+Body:
+
+```json
+{
+  "username": "admin.petfeliz@petjourney.com",
+  "password": "123456"
+}
+```
+
+Use o token retornado no header:
+
+```http
+Authorization: Bearer SEU_TOKEN
+```
+
+### 7. Testar primeiro acesso por e-mail
+
+Com token de `ADMIN_CLINICA`, chame:
+
+```http
+POST http://localhost:8080/workflows/tutors/register-with-pet
+```
+
+Body de exemplo:
+
+```json
+{
+  "tutor": {
+    "name": "Tutor Teste Email",
+    "cpf": "98765432109",
+    "phone": "11999999999",
+    "email": "email_destino@exemplo.com"
+  },
+  "pet": {
+    "name": "Bolt",
+    "species": "CACHORRO",
+    "breed": "SRD",
+    "sex": "MACHO",
+    "birthDate": "2021-04-10",
+    "weight": 14.7,
+    "tutorId": 1
+  }
+}
+```
+
+Use um CPF novo em cada teste. Se `MAIL_ENABLED=false`, o codigo aparece no log. Se `MAIL_ENABLED=true`, o backend envia pelo SMTP configurado.
+
+### 8. Rodar testes
+
+```powershell
+mvn test
+```
+
+## Configuracao local detalhada
 
 Por padrao, o projeto espera PostgreSQL em `localhost:5433` com banco `petjourney`, usuario `postgres` e senha `postgres`.
 
@@ -43,7 +229,7 @@ RSA_PUBLIC_KEY=classpath:app.pub
 O envio de e-mail e feito pelo backend. O front/mobile apenas chama a API; o fluxo correto e:
 
 ```text
-Front/Mobile -> Backend -> Resend -> Usuario
+Front/Mobile -> Backend -> SMTP configurado -> Usuario
 ```
 
 Por padrao, o ambiente local nao envia e-mail real. Com `MAIL_ENABLED=false`, o backend registra no log o conteudo que seria enviado, incluindo o codigo de primeiro acesso do tutor. Esse modo nao exige host SMTP, usuario, senha ou API key.
