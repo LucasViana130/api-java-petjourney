@@ -1,5 +1,6 @@
 package br.com.fiap.petjourney.services;
 
+import br.com.fiap.petjourney.dtos.request.ConsultationMedicationRequest;
 import br.com.fiap.petjourney.dtos.request.ConsultationRequest;
 import br.com.fiap.petjourney.dtos.response.AppointmentResponse;
 import br.com.fiap.petjourney.dtos.response.ConsultationResponse;
@@ -41,6 +42,8 @@ public class ConsultationService {
         if (medicalRecordService.existsByAppointmentId(appointment.getId())) {
             throw new ForbiddenOperationException("Esta consulta já possui relatório registrado");
         }
+
+        validateMedicationPeriods(request.medications());
 
         var medicalRecord = MedicalRecord.builder()
                 .registrationDate(LocalDateTime.now())
@@ -85,5 +88,16 @@ public class ConsultationService {
                 MedicalRecordResponse.fromEntity(savedRecord),
                 medications
         );
+    }
+
+    private void validateMedicationPeriods(List<ConsultationMedicationRequest> medications) {
+        if (medications == null) {
+            return;
+        }
+        medications.forEach(item -> {
+            if (item.startDate() != null && item.endDate() != null && item.endDate().isBefore(item.startDate())) {
+                throw new ForbiddenOperationException("A data final do medicamento nao pode ser anterior a data inicial");
+            }
+        });
     }
 }

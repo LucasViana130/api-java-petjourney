@@ -25,12 +25,16 @@ public class VeterinarianAvailabilityService {
     private final AuthenticatedUserService authenticatedUser;
 
     public Page<VeterinarianAvailabilityResponse> findAvailableSlots(Long veterinarianId, LocalDateTime start, LocalDateTime end, Pageable pageable) {
+        validateDateRange(start, end);
+
         Long clinicId = resolveClinicIdForRead();
         return repository.findAvailableSlots(clinicId, veterinarianId, start, end, pageable)
                 .map(VeterinarianAvailabilityResponse::fromEntity);
     }
 
     public Page<VeterinarianAvailabilityResponse> findByVeterinarian(Long veterinarianId, LocalDateTime start, LocalDateTime end, Pageable pageable) {
+        validateDateRange(start, end);
+
         Veterinarian veterinarian = veterinarianRepository.findById(veterinarianId)
                 .orElseThrow(() -> new ResourceNotFoundException("Veterinário não encontrado"));
         assertVeterinarianClinicAccess(veterinarian);
@@ -97,6 +101,11 @@ public class VeterinarianAvailabilityService {
         Long clinicId = authenticatedUser.clinicId();
         if (veterinarian.getClinic() == null || !veterinarian.getClinic().getId().equals(clinicId)) {
             throw new ForbiddenOperationException("Usuário não pode acessar disponibilidade de outra clínica");
+        }
+    }
+    private void validateDateRange(LocalDateTime start, LocalDateTime end) {
+        if (start != null && end != null && end.isBefore(start)) {
+            throw new ForbiddenOperationException("A data final nao pode ser anterior a data inicial");
         }
     }
 }

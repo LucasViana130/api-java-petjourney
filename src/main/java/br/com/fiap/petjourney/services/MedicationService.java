@@ -55,6 +55,8 @@ public class MedicationService {
 
     @CacheEvict(value = "medications", allEntries = true)
     public MedicationResponse create(MedicationRequest request) {
+        validateMedicationPeriod(request.startDate(), request.endDate());
+
         Pet pet = petRepository.findById(request.petId())
                 .orElseThrow(() -> new ResourceNotFoundException("Pet nao encontrado"));
 
@@ -68,6 +70,7 @@ public class MedicationService {
     @CacheEvict(value = "medications", allEntries = true)
     public MedicationResponse update(Long id, MedicationRequest request) {
         Medication medication = findAccessibleMedication(id);
+        validateMedicationPeriod(request.startDate(), request.endDate());
 
         Pet pet = petRepository.findById(request.petId())
                 .orElseThrow(() -> new ResourceNotFoundException("Pet nao encontrado"));
@@ -129,6 +132,12 @@ public class MedicationService {
         }
         if (role == UserRole.VETERINARIO && !veterinarian.getId().equals(authenticatedUser.veterinarianId())) {
             throw new ForbiddenOperationException("Veterinario nao pode prescrever para outro veterinario");
+        }
+    }
+
+    private void validateMedicationPeriod(java.time.LocalDate startDate, java.time.LocalDate endDate) {
+        if (startDate != null && endDate != null && endDate.isBefore(startDate)) {
+            throw new ForbiddenOperationException("A data final do medicamento nao pode ser anterior a data inicial");
         }
     }
 }

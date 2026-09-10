@@ -52,6 +52,8 @@ public class AppointmentService {
     }
 
     public Page<AppointmentResponse> findByDateRange(LocalDateTime start, LocalDateTime end, Pageable pageable) {
+        validateDateRange(start, end);
+
         UserRole role = authenticatedUser.role();
         if (role == UserRole.TUTOR) {
             return repository.findByPetTutorIdAndDateTimeBetween(authenticatedUser.tutorId(), start, end, pageable)
@@ -265,6 +267,12 @@ public class AppointmentService {
     private void validateAvailableSlot(Long veterinarianId, LocalDateTime dateTime) {
         if (!availabilityService.isSlotAvailable(veterinarianId, dateTime)) {
             throw new ForbiddenOperationException("Horário não está disponível para este veterinário");
+        }
+    }
+
+    private void validateDateRange(LocalDateTime start, LocalDateTime end) {
+        if (start != null && end != null && end.isBefore(start)) {
+            throw new ForbiddenOperationException("A data final nao pode ser anterior a data inicial");
         }
     }
 
