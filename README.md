@@ -116,6 +116,14 @@ Swagger:
 http://localhost:8080/swagger-ui.html
 ```
 
+Collection Postman:
+
+```text
+docs/postman/PetJourney.postman_collection.json
+```
+
+Importe essa collection no Postman e rode primeiro `Auth > Login ADMIN_CLINICA`. O teste da request salva o JWT automaticamente na variavel `token` da collection.
+
 ### 6. Login inicial
 
 Usuarios seed para teste:

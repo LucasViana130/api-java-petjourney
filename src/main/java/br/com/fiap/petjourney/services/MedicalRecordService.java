@@ -105,7 +105,7 @@ public class MedicalRecordService {
 
         assertWriteAccess(pet, veterinarian);
         MedicalRecord medicalRecord = new MedicalRecord(request, pet, veterinarian);
-        medicalRecord.setAppointment(resolveAppointmentForRequest(request.appointmentId()));
+        medicalRecord.setAppointment(resolveAppointmentForRequest(request.appointmentId(), pet, veterinarian, null));
         return MedicalRecordResponse.fromEntity(repository.save(medicalRecord));
     }
 
@@ -121,7 +121,7 @@ public class MedicalRecordService {
 
         assertWriteAccess(pet, veterinarian);
         medicalRecord.updateFrom(request, pet, veterinarian);
-        medicalRecord.setAppointment(resolveAppointmentForRequest(request.appointmentId()));
+        medicalRecord.setAppointment(resolveAppointmentForRequest(request.appointmentId(), pet, veterinarian, medicalRecord.getId()));
 
         return MedicalRecordResponse.fromEntity(repository.save(medicalRecord));
     }
@@ -185,11 +185,33 @@ public class MedicalRecordService {
         }
     }
 
-    private Appointment resolveAppointmentForRequest(Long appointmentId) {
+    private Appointment resolveAppointmentForRequest(
+            Long appointmentId,
+            Pet pet,
+            Veterinarian veterinarian,
+            Long currentMedicalRecordId
+    ) {
         if (appointmentId == null) {
             return null;
         }
-        return appointmentRepository.findById(appointmentId)
+
+        Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Agendamento nao encontrado"));
+
+        if (appointment.getPet() == null || !appointment.getPet().getId().equals(pet.getId())) {
+            throw new ForbiddenOperationException("Agendamento informado nao pertence ao pet do prontuario");
+        }
+        if (appointment.getVeterinarian() == null || !appointment.getVeterinarian().getId().equals(veterinarian.getId())) {
+            throw new ForbiddenOperationException("Agendamento informado nao pertence ao veterinario do prontuario");
+        }
+
+        repository.findByAppointmentId(appointmentId).ifPresent(existingRecord -> {
+            boolean sameRecord = currentMedicalRecordId != null && existingRecord.getId().equals(currentMedicalRecordId);
+            if (!sameRecord) {
+                throw new ForbiddenOperationException("Agendamento informado ja possui prontuario vinculado");
+            }
+        });
+
+        return appointment;
     }
 }
