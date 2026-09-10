@@ -58,7 +58,14 @@ public class BrevoEmailSender {
                     .POST(HttpRequest.BodyPublishers.ofString(json))
                     .build();
 
-            log.info("Enviando e-mail PetJourney via Brevo. from={}, to={}, subject={}", from, to, subject);
+            log.info(
+                    "Enviando e-mail PetJourney via Brevo. apiUrl={}, timeoutMs={}, from={}, to={}, subject={}",
+                    apiUrl,
+                    timeoutMs,
+                    from,
+                    to,
+                    subject
+            );
             HttpResponse<String> response = HttpClient.newBuilder()
                     .connectTimeout(Duration.ofMillis(timeoutMs))
                     .build()

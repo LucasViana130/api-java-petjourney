@@ -434,6 +434,8 @@ Se aparecer `Falha ao enviar e-mail PetJourney via Brevo`, revise `MAIL_PROVIDER
 
 Para teste no Railway, use Brevo por API HTTP. O SMTP do Gmail pode sofrer timeout em hospedagens cloud, mesmo com senha de app correta.
 
+Se o log mostrar `HTTP connect timed out` ao chamar a Brevo, confirme que o deploy esta usando o `railway.toml` atual, que forca IPv4 no Java. Depois faca um novo deploy pelo commit mais recente.
+
 Com `MAIL_ENABLED=false`, o log deve mostrar:
 
 ```text
