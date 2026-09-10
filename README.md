@@ -147,6 +147,7 @@ $env:MAIL_PASSWORD="sua_senha_de_app_do_google"
 $env:MAIL_FROM="PetJourney <seuemail@gmail.com>"
 $env:MAIL_SMTP_AUTH="true"
 $env:MAIL_SMTP_STARTTLS="true"
+$env:MAIL_SMTP_SSL="false"
 $env:MAIL_SMTP_CONNECTION_TIMEOUT="5000"
 $env:MAIL_SMTP_TIMEOUT="5000"
 $env:MAIL_SMTP_WRITE_TIMEOUT="5000"
@@ -246,6 +247,24 @@ MAIL_PASSWORD=sua_senha_de_app_do_google
 MAIL_FROM=PetJourney <seuemail@gmail.com>
 MAIL_SMTP_AUTH=true
 MAIL_SMTP_STARTTLS=true
+MAIL_SMTP_SSL=false
+MAIL_SMTP_CONNECTION_TIMEOUT=5000
+MAIL_SMTP_TIMEOUT=5000
+MAIL_SMTP_WRITE_TIMEOUT=5000
+```
+
+Se a porta `587` com STARTTLS der timeout no Railway, teste Gmail com SSL direto na porta `465`:
+
+```properties
+MAIL_ENABLED=true
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=465
+MAIL_USERNAME=seuemail@gmail.com
+MAIL_PASSWORD=sua_senha_de_app_do_google
+MAIL_FROM=PetJourney <seuemail@gmail.com>
+MAIL_SMTP_AUTH=true
+MAIL_SMTP_STARTTLS=false
+MAIL_SMTP_SSL=true
 MAIL_SMTP_CONNECTION_TIMEOUT=5000
 MAIL_SMTP_TIMEOUT=5000
 MAIL_SMTP_WRITE_TIMEOUT=5000
@@ -446,6 +465,7 @@ MAIL_PASSWORD=
 MAIL_FROM=no-reply@petjourney.com
 MAIL_SMTP_AUTH=true
 MAIL_SMTP_STARTTLS=true
+MAIL_SMTP_SSL=false
 ```
 
 ### Performance/runtime
