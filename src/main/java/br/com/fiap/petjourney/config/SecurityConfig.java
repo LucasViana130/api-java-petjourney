@@ -73,6 +73,7 @@ public class SecurityConfig {
     JwtEncoder jwtEncoder(RsaKeyProperties rsaKeyProperties, ResourceLoader resourceLoader) {
         RSAPublicKey publicKey = readPublicKey(rsaKeyProperties, resourceLoader);
         RSAPrivateKey privateKey = readPrivateKey(rsaKeyProperties, resourceLoader);
+        assertMatchingKeyPair(publicKey, privateKey);
         RSAKey rsaKey = new RSAKey.Builder(publicKey)
                 .privateKey(privateKey)
                 .build();
@@ -155,5 +156,11 @@ public class SecurityConfig {
                 .replace("-----END " + keyType + "-----", "")
                 .replaceAll("\\s", "");
         return Base64.getDecoder().decode(content);
+    }
+
+    private void assertMatchingKeyPair(RSAPublicKey publicKey, RSAPrivateKey privateKey) {
+        if (!publicKey.getModulus().equals(privateKey.getModulus())) {
+            throw new IllegalStateException("As chaves RSA configuradas nao pertencem ao mesmo par. Gere app.pub a partir do app.key e atualize RSA_PUBLIC_KEY/RSA_PRIVATE_KEY.");
+        }
     }
 }
