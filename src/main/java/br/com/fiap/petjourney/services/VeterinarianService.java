@@ -2,6 +2,7 @@ package br.com.fiap.petjourney.services;
 
 import br.com.fiap.petjourney.dtos.request.VeterinarianRequest;
 import br.com.fiap.petjourney.dtos.response.VeterinarianResponse;
+import br.com.fiap.petjourney.exceptions.ConflictOperationException;
 import br.com.fiap.petjourney.exceptions.ForbiddenOperationException;
 import br.com.fiap.petjourney.exceptions.ResourceNotFoundException;
 import br.com.fiap.petjourney.models.Clinic;
@@ -63,6 +64,7 @@ public class VeterinarianService {
         if (!request.clinicId().equals(clinicId)) {
             throw new ForbiddenOperationException("Administrador nao pode cadastrar veterinario em outra clinica");
         }
+        assertUsernameAvailable(request.email());
 
         Clinic clinic = clinicRepository.findByIdAndActiveTrue(clinicId)
                 .orElseThrow(() -> new ResourceNotFoundException("Clinica nao encontrada"));
@@ -123,7 +125,7 @@ public class VeterinarianService {
 
         String username = normalize(veterinarian.getEmail());
         if (userAccountRepository.existsByUsername(username)) {
-            throw new ForbiddenOperationException("Ja existe usuario cadastrado com este e-mail");
+            throw new ConflictOperationException("Ja existe usuario cadastrado com este e-mail");
         }
 
         String code = generateFirstAccessCode();
@@ -147,6 +149,16 @@ public class VeterinarianService {
 
         if (hasAccessAccount && emailChanged) {
             throw new ForbiddenOperationException("E-mail do veterinario nao pode ser alterado apos a criacao da conta");
+        }
+        if (!hasAccessAccount && emailChanged) {
+            assertUsernameAvailable(requestedEmail);
+        }
+    }
+
+    private void assertUsernameAvailable(String email) {
+        String username = normalize(email);
+        if (username != null && userAccountRepository.existsByUsername(username)) {
+            throw new ConflictOperationException("Ja existe usuario cadastrado com este e-mail");
         }
     }
 

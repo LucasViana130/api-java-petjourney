@@ -2,6 +2,7 @@ package br.com.fiap.petjourney.services;
 
 import br.com.fiap.petjourney.dtos.request.TutorRequest;
 import br.com.fiap.petjourney.dtos.response.TutorResponse;
+import br.com.fiap.petjourney.exceptions.ConflictOperationException;
 import br.com.fiap.petjourney.exceptions.ForbiddenOperationException;
 import br.com.fiap.petjourney.exceptions.ResourceNotFoundException;
 import br.com.fiap.petjourney.models.Clinic;
@@ -82,6 +83,7 @@ public class TutorService {
             throw new ForbiddenOperationException("Tutor nao pode alterar o proprio CPF");
         }
         assertEmailNotChanged(tutor, request.email());
+        assertCpfAvailableForUpdate(tutor, request.cpf());
         tutor.updateFrom(request);
         return TutorResponse.fromEntity(repository.save(tutor));
     }
@@ -106,6 +108,8 @@ public class TutorService {
     @Transactional
     public Tutor createTutorForAuthenticatedClinic(TutorRequest request) {
         assertClinicStaff();
+        assertCpfAvailableForCreate(request.cpf());
+        assertUsernameAvailable(request.email());
 
         Clinic clinic = clinicRepository.findByIdAndActiveTrue(authenticatedUser.clinicId())
                 .orElseThrow(() -> new ResourceNotFoundException("Clínica autenticada não encontrada"));
@@ -141,7 +145,7 @@ public class TutorService {
 
         String username = normalize(tutor.getEmail());
         if (userAccountRepository.existsByUsername(username)) {
-            throw new ForbiddenOperationException("Já existe usuário cadastrado com este e-mail");
+            throw new ConflictOperationException("Ja existe usuario cadastrado com este e-mail");
         }
 
         String code = generateFirstAccessCode();
@@ -180,6 +184,28 @@ public class TutorService {
 
         if (hasAccessAccount && emailChanged) {
             throw new ForbiddenOperationException("E-mail do tutor nao pode ser alterado apos a criacao da conta");
+        }
+        if (!hasAccessAccount && emailChanged) {
+            assertUsernameAvailable(requestedEmail);
+        }
+    }
+
+    private void assertCpfAvailableForCreate(String cpf) {
+        if (repository.existsByCpf(cpf)) {
+            throw new ConflictOperationException("Ja existe tutor cadastrado com este CPF");
+        }
+    }
+
+    private void assertCpfAvailableForUpdate(Tutor tutor, String requestedCpf) {
+        if (!Objects.equals(tutor.getCpf(), requestedCpf) && repository.existsByCpfAndIdNot(requestedCpf, tutor.getId())) {
+            throw new ConflictOperationException("Ja existe tutor cadastrado com este CPF");
+        }
+    }
+
+    private void assertUsernameAvailable(String email) {
+        String username = normalize(email);
+        if (username != null && userAccountRepository.existsByUsername(username)) {
+            throw new ConflictOperationException("Ja existe usuario cadastrado com este e-mail");
         }
     }
 

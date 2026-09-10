@@ -21,8 +21,21 @@
       "script": {
         "type": "text/javascript",
         "exec": [
-          "const now = Date.now().toString();",
-          "pm.collectionVariables.set('stamp', now.slice(-10));",
+          "const resetRequests = ['Login ADMIN_CLINICA'];",
+          "if (resetRequests.includes(pm.info.requestName) || !pm.collectionVariables.get('runId')) {",
+          "  const runId = Date.now().toString().slice(-8) + Math.floor(Math.random() * 100).toString().padStart(2, '0');",
+          "  const cpfBase = Math.floor(10000000000 + Math.random() * 89999999999).toString();",
+          "  const workflowCpfBase = Math.floor(10000000000 + Math.random() * 89999999999).toString();",
+          "  pm.collectionVariables.set('runId', runId);",
+          "  pm.collectionVariables.set('stamp', runId);",
+          "  pm.collectionVariables.set('tutorCpf', cpfBase);",
+          "  pm.collectionVariables.set('workflowTutorCpf', workflowCpfBase);",
+          "  pm.collectionVariables.set('tutorEmail', `tutor.${runId}@exemplo.com`);",
+          "  pm.collectionVariables.set('workflowTutorEmail', `tutor.workflow.${runId}@exemplo.com`);",
+          "  pm.collectionVariables.set('vetEmail', `vet.${runId}@exemplo.com`);",
+          "  pm.collectionVariables.set('clinicEmail', `clinica.${runId}@exemplo.com`);",
+          "  pm.collectionVariables.set('adminClinicEmail', `admin.clinica.${runId}@exemplo.com`);",
+          "}",
           "pm.collectionVariables.set('futureDateTime', new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().slice(0, 19));",
           "pm.collectionVariables.set('futureEndDateTime', new Date(Date.now() + 3 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000).toISOString().slice(0, 19));",
           "pm.collectionVariables.set('pastDateTime', new Date(Date.now() - 60 * 60 * 1000).toISOString().slice(0, 19));"
@@ -47,7 +60,15 @@
     {"key": "medicationId", "value": "1", "type": "string"},
     {"key": "availabilityId", "value": "1", "type": "string"},
     {"key": "firstAccessCode", "value": "", "type": "string"},
+    {"key": "runId", "value": "", "type": "string"},
     {"key": "stamp", "value": "", "type": "string"},
+    {"key": "tutorCpf", "value": "", "type": "string"},
+    {"key": "workflowTutorCpf", "value": "", "type": "string"},
+    {"key": "tutorEmail", "value": "", "type": "string"},
+    {"key": "workflowTutorEmail", "value": "", "type": "string"},
+    {"key": "vetEmail", "value": "", "type": "string"},
+    {"key": "clinicEmail", "value": "", "type": "string"},
+    {"key": "adminClinicEmail", "value": "", "type": "string"},
     {"key": "futureDateTime", "value": "", "type": "string"},
     {"key": "futureEndDateTime", "value": "", "type": "string"},
     {"key": "pastDateTime", "value": "", "type": "string"}
@@ -150,7 +171,7 @@
             "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{adminSistemaToken}}", "type": "string"}]},
             "method": "POST",
             "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\n  \"name\": \"Clinica Postman {{stamp}}\",\n  \"cnpj\": \"11222333000181\",\n  \"phone\": \"1133334444\",\n  \"email\": \"clinica.{{stamp}}@exemplo.com\",\n  \"address\": \"Rua Teste, 100\"\n}"},
+            "body": {"mode": "raw", "raw": "{\n  \"name\": \"Clinica Postman {{runId}}\",\n  \"cnpj\": \"11222333000181\",\n  \"phone\": \"1133334444\",\n  \"email\": \"{{clinicEmail}}\",\n  \"address\": \"Rua Teste, 100\"\n}"},
             "url": "{{baseUrl}}/clinics"
           }
         },
@@ -170,7 +191,7 @@
             "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{adminSistemaToken}}", "type": "string"}]},
             "method": "POST",
             "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\n  \"username\": \"admin.clinica.{{stamp}}@exemplo.com\",\n  \"password\": \"123456\"\n}"},
+            "body": {"mode": "raw", "raw": "{\n  \"username\": \"{{adminClinicEmail}}\",\n  \"password\": \"123456\"\n}"},
             "url": "{{baseUrl}}/system/clinics/{{clinicId}}/admins"
           }
         },
@@ -192,7 +213,7 @@
           "request": {
             "method": "POST",
             "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\n  \"name\": \"Tutor Postman {{stamp}}\",\n  \"cpf\": \"9{{stamp}}\",\n  \"phone\": \"11999999999\",\n  \"email\": \"tutor.{{stamp}}@exemplo.com\"\n}"},
+            "body": {"mode": "raw", "raw": "{\n  \"name\": \"Tutor Postman {{runId}}\",\n  \"cpf\": \"{{tutorCpf}}\",\n  \"phone\": \"11999999999\",\n  \"email\": \"{{tutorEmail}}\"\n}"},
             "url": "{{baseUrl}}/tutors"
           }
         },
@@ -201,7 +222,7 @@
           "request": {
             "method": "PUT",
             "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\n  \"name\": \"Tutor Postman Atualizado\",\n  \"cpf\": \"9{{stamp}}\",\n  \"phone\": \"11888888888\",\n  \"email\": \"tutor.{{stamp}}@exemplo.com\"\n}"},
+            "body": {"mode": "raw", "raw": "{\n  \"name\": \"Tutor Postman Atualizado\",\n  \"cpf\": \"{{tutorCpf}}\",\n  \"phone\": \"11888888888\",\n  \"email\": \"{{tutorEmail}}\"\n}"},
             "url": "{{baseUrl}}/tutors/{{tutorId}}"
           }
         },
@@ -217,7 +238,7 @@
           "request": {
             "method": "POST",
             "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\n  \"name\": \"Pet Postman {{stamp}}\",\n  \"species\": \"CACHORRO\",\n  \"breed\": \"SRD\",\n  \"sex\": \"MACHO\",\n  \"birthDate\": \"2021-04-10\",\n  \"weight\": 14.7,\n  \"tutorId\": {{tutorId}}\n}"},
+            "body": {"mode": "raw", "raw": "{\n  \"name\": \"Pet Postman {{runId}}\",\n  \"species\": \"CACHORRO\",\n  \"breed\": \"SRD\",\n  \"sex\": \"MACHO\",\n  \"birthDate\": \"2021-04-10\",\n  \"weight\": 14.7,\n  \"tutorId\": {{tutorId}}\n}"},
             "url": "{{baseUrl}}/pets"
           }
         },
@@ -249,7 +270,7 @@
           "request": {
             "method": "POST",
             "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\n  \"name\": \"Vet Postman {{stamp}}\",\n  \"crmv\": \"CRMV-{{stamp}}\",\n  \"phone\": \"11988887777\",\n  \"email\": \"vet.{{stamp}}@exemplo.com\",\n  \"specialty\": \"Clinico geral\",\n  \"clinicId\": {{clinicId}}\n}"},
+            "body": {"mode": "raw", "raw": "{\n  \"name\": \"Vet Postman {{runId}}\",\n  \"crmv\": \"CRMV-{{runId}}\",\n  \"phone\": \"11988887777\",\n  \"email\": \"{{vetEmail}}\",\n  \"specialty\": \"Clinico geral\",\n  \"clinicId\": {{clinicId}}\n}"},
             "url": "{{baseUrl}}/veterinarians"
           }
         },
@@ -258,7 +279,7 @@
           "request": {
             "method": "PUT",
             "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\n  \"name\": \"Vet Postman Atualizado\",\n  \"crmv\": \"CRMV-{{stamp}}\",\n  \"phone\": \"11777777777\",\n  \"email\": \"vet.{{stamp}}@exemplo.com\",\n  \"specialty\": \"Dermatologia\",\n  \"clinicId\": {{clinicId}}\n}"},
+            "body": {"mode": "raw", "raw": "{\n  \"name\": \"Vet Postman Atualizado\",\n  \"crmv\": \"CRMV-{{runId}}\",\n  \"phone\": \"11777777777\",\n  \"email\": \"{{vetEmail}}\",\n  \"specialty\": \"Dermatologia\",\n  \"clinicId\": {{clinicId}}\n}"},
             "url": "{{baseUrl}}/veterinarians/{{veterinarianId}}"
           }
         },
@@ -409,7 +430,7 @@
           "request": {
             "method": "POST",
             "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\n  \"tutor\": {\n    \"name\": \"Tutor Workflow {{stamp}}\",\n    \"cpf\": \"8{{stamp}}\",\n    \"phone\": \"11999999999\",\n    \"email\": \"tutor.workflow.{{stamp}}@exemplo.com\"\n  },\n  \"pet\": {\n    \"name\": \"Pet Workflow {{stamp}}\",\n    \"species\": \"CACHORRO\",\n    \"breed\": \"SRD\",\n    \"sex\": \"MACHO\",\n    \"birthDate\": \"2021-04-10\",\n    \"weight\": 14.7,\n    \"tutorId\": 1\n  }\n}"},
+            "body": {"mode": "raw", "raw": "{\n  \"tutor\": {\n    \"name\": \"Tutor Workflow {{runId}}\",\n    \"cpf\": \"{{workflowTutorCpf}}\",\n    \"phone\": \"11999999999\",\n    \"email\": \"{{workflowTutorEmail}}\"\n  },\n  \"pet\": {\n    \"name\": \"Pet Workflow {{runId}}\",\n    \"species\": \"CACHORRO\",\n    \"breed\": \"SRD\",\n    \"sex\": \"MACHO\",\n    \"birthDate\": \"2021-04-10\",\n    \"weight\": 14.7,\n    \"tutorId\": 1\n  }\n}"},
             "url": "{{baseUrl}}/workflows/tutors/register-with-pet"
           }
         },

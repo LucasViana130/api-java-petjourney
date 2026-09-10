@@ -297,6 +297,15 @@ Fluxo recomendado:
 5. Rode as pastas de consulta e cadastro conforme o perfil.
 6. Deixe requests de exclusao para o final do teste, porque elas fazem soft delete dos registros criados.
 
+Ao rodar uma nova bateria de testes no Postman, execute novamente `00 - Auth > Login ADMIN_CLINICA`. Essa request gera uma nova rodada de dados dinamicos (`runId`, CPFs e e-mails de teste), reduzindo colisao com registros ja criados no Railway.
+
+Se receber `409 Conflict` em cadastro de tutor:
+
+- `Ja existe tutor cadastrado com este CPF`: use outro CPF de 11 digitos.
+- `Ja existe usuario cadastrado com este e-mail`: use outro e-mail.
+
+Mesmo com soft delete, CPF de tutor e username da conta podem continuar reservados no banco para preservar historico e evitar inconsistencias de login.
+
 A collection cobre:
 
 - Login, `/auth/me` e primeiro acesso.

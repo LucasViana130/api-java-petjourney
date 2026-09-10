@@ -16,6 +16,8 @@ public interface TutorRepository extends JpaRepository<Tutor, Long> {
     Page<Tutor> findByActiveTrue(Pageable pageable);
     Page<Tutor> findByActiveTrueAndNameContainingIgnoreCase(String name, Pageable pageable);
     Optional<Tutor> findByIdAndActiveTrue(Long id);
+    boolean existsByCpf(String cpf);
+    boolean existsByCpfAndIdNot(String cpf, Long id);
 
     @Query("select distinct t from Tutor t where t.clinic.id = :clinicId and t.active = true and t.clinic.active = true")
     Page<Tutor> findClientsByClinicId(@Param("clinicId") Long clinicId, Pageable pageable);

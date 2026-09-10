@@ -79,6 +79,14 @@ public class GlobalExceptionHandler {
         return buildError(HttpStatus.FORBIDDEN, ex.getMessage(), request);
     }
 
+    @ExceptionHandler(ConflictOperationException.class)
+    public ResponseEntity<ErrorResponse> handleConflictOperation(
+            ConflictOperationException ex,
+            HttpServletRequest request
+    ) {
+        return buildError(HttpStatus.CONFLICT, ex.getMessage(), request);
+    }
+
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDenied(
             AccessDeniedException ex,
