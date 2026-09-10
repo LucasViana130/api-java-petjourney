@@ -1,402 +1,431 @@
 {
   "info": {
     "_postman_id": "5d2e1f52-8a9d-4dd2-9f86-2e6f7e8a9b10",
-    "name": "PetJourney API",
-    "description": "Collection para testar a API PetJourney localmente. Configure a variavel baseUrl se a API nao estiver em http://localhost:8080.",
+    "name": "PetJourney API - Entrega",
+    "description": "Collection completa para testar a API PetJourney. A variavel baseUrl aponta para o Railway de producao; altere para http://localhost:8080 para teste local.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
-  "variable": [
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
     {
-      "key": "baseUrl",
-      "value": "http://localhost:8080",
-      "type": "string"
-    },
-    {
-      "key": "token",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "appointmentId",
-      "value": "1",
-      "type": "string"
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const now = Date.now().toString();",
+          "pm.collectionVariables.set('stamp', now.slice(-10));",
+          "pm.collectionVariables.set('futureDateTime', new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().slice(0, 19));",
+          "pm.collectionVariables.set('futureEndDateTime', new Date(Date.now() + 3 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000).toISOString().slice(0, 19));",
+          "pm.collectionVariables.set('pastDateTime', new Date(Date.now() - 60 * 60 * 1000).toISOString().slice(0, 19));"
+        ]
+      }
     }
+  ],
+  "variable": [
+    {"key": "baseUrl", "value": "https://api-java-petjourney-production.up.railway.app", "type": "string"},
+    {"key": "token", "value": "", "type": "string"},
+    {"key": "adminSistemaToken", "value": "", "type": "string"},
+    {"key": "adminClinicaToken", "value": "", "type": "string"},
+    {"key": "veterinarioToken", "value": "", "type": "string"},
+    {"key": "tutorToken", "value": "", "type": "string"},
+    {"key": "clinicId", "value": "1", "type": "string"},
+    {"key": "createdClinicId", "value": "", "type": "string"},
+    {"key": "tutorId", "value": "1", "type": "string"},
+    {"key": "petId", "value": "1", "type": "string"},
+    {"key": "veterinarianId", "value": "1", "type": "string"},
+    {"key": "appointmentId", "value": "1", "type": "string"},
+    {"key": "medicalRecordId", "value": "1", "type": "string"},
+    {"key": "medicationId", "value": "1", "type": "string"},
+    {"key": "availabilityId", "value": "1", "type": "string"},
+    {"key": "firstAccessCode", "value": "", "type": "string"},
+    {"key": "stamp", "value": "", "type": "string"},
+    {"key": "futureDateTime", "value": "", "type": "string"},
+    {"key": "futureEndDateTime", "value": "", "type": "string"},
+    {"key": "pastDateTime", "value": "", "type": "string"}
   ],
   "item": [
     {
-      "name": "Auth",
+      "name": "00 - Auth",
       "item": [
         {
           "name": "Login ADMIN_CLINICA",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('login retornou token', function () {",
-                  "  pm.response.to.have.status(200);",
-                  "  const json = pm.response.json();",
-                  "  pm.expect(json.token).to.be.a('string').and.not.empty;",
-                  "  pm.collectionVariables.set('token', json.token);",
-                  "});"
-                ]
-              }
-            }
-          ],
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('login admin clinica 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.collectionVariables.set('token', json.token);",
+            "pm.collectionVariables.set('adminClinicaToken', json.token);",
+            "pm.collectionVariables.set('clinicId', json.clinicId || '1');"
+          ]}}],
           "request": {
+            "auth": {"type": "noauth"},
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"username\": \"admin.petfeliz@petjourney.com\",\n  \"password\": \"123456\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/auth/login",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "login"
-              ]
-            }
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"username\": \"admin.petfeliz@petjourney.com\",\n  \"password\": \"123456\"\n}"},
+            "url": "{{baseUrl}}/auth/login"
+          }
+        },
+        {
+          "name": "Login ADMIN_SISTEMA",
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('login admin sistema 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.collectionVariables.set('adminSistemaToken', json.token);"
+          ]}}],
+          "request": {
+            "auth": {"type": "noauth"},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"username\": \"admin.sistema@petjourney.com\",\n  \"password\": \"123456\"\n}"},
+            "url": "{{baseUrl}}/auth/login"
+          }
+        },
+        {
+          "name": "Login VETERINARIO Seed",
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('login veterinario 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.collectionVariables.set('veterinarioToken', json.token);",
+            "pm.collectionVariables.set('veterinarianId', json.veterinarianId || pm.collectionVariables.get('veterinarianId'));"
+          ]}}],
+          "request": {
+            "auth": {"type": "noauth"},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"username\": \"joao@petjourney.com\",\n  \"password\": \"123456\"\n}"},
+            "url": "{{baseUrl}}/auth/login"
+          }
+        },
+        {
+          "name": "Login TUTOR Seed",
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('login tutor 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.collectionVariables.set('tutorToken', json.token);",
+            "pm.collectionVariables.set('tutorId', json.tutorId || pm.collectionVariables.get('tutorId'));"
+          ]}}],
+          "request": {
+            "auth": {"type": "noauth"},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"username\": \"carlos@petjourney.com\",\n  \"password\": \"123456\"\n}"},
+            "url": "{{baseUrl}}/auth/login"
           }
         },
         {
           "name": "Usuario Atual",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/auth/me",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "me"
-              ]
-            }
-          }
+          "request": {"method": "GET", "url": "{{baseUrl}}/auth/me"}
         },
         {
           "name": "Ativar Primeiro Acesso",
           "request": {
+            "auth": {"type": "noauth"},
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"username\": \"email_destino@exemplo.com\",\n  \"code\": \"123456\",\n  \"password\": \"123456\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/auth/first-access/activate",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "first-access",
-                "activate"
-              ]
-            }
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"username\": \"email_destino@exemplo.com\",\n  \"code\": \"{{firstAccessCode}}\",\n  \"password\": \"123456\"\n}"},
+            "url": "{{baseUrl}}/auth/first-access/activate"
           }
         }
       ]
     },
     {
-      "name": "Workflow",
+      "name": "01 - Sistema e Clinicas",
       "item": [
+        {"name": "Listar Clinicas", "request": {"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{adminSistemaToken}}", "type": "string"}]}, "method": "GET", "url": "{{baseUrl}}/clinics?page=0&size=10"}},
+        {"name": "Buscar Clinica por ID", "request": {"method": "GET", "url": "{{baseUrl}}/clinics/{{clinicId}}"}},
         {
-          "name": "Cadastrar Tutor com Pet",
+          "name": "Criar Clinica - ADMIN_SISTEMA",
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "if (pm.response.code === 201) pm.collectionVariables.set('createdClinicId', pm.response.json().id);"
+          ]}}],
           "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{adminSistemaToken}}", "type": "string"}]},
             "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"tutor\": {\n    \"name\": \"Tutor Teste Postman\",\n    \"cpf\": \"98765432109\",\n    \"phone\": \"11999999999\",\n    \"email\": \"email_destino@exemplo.com\"\n  },\n  \"pet\": {\n    \"name\": \"Bolt Postman\",\n    \"species\": \"CACHORRO\",\n    \"breed\": \"SRD\",\n    \"sex\": \"MACHO\",\n    \"birthDate\": \"2021-04-10\",\n    \"weight\": 14.7,\n    \"tutorId\": 1\n  }\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/workflows/tutors/register-with-pet",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "workflows",
-                "tutors",
-                "register-with-pet"
-              ]
-            }
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"name\": \"Clinica Postman {{stamp}}\",\n  \"cnpj\": \"11222333000181\",\n  \"phone\": \"1133334444\",\n  \"email\": \"clinica.{{stamp}}@exemplo.com\",\n  \"address\": \"Rua Teste, 100\"\n}"},
+            "url": "{{baseUrl}}/clinics"
           }
         },
         {
-          "name": "Registrar Consulta",
+          "name": "Atualizar Clinica Criada",
           "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"appointmentId\": {{appointmentId}},\n  \"mainComplaint\": \"Consulta de rotina\",\n  \"diagnosis\": \"Animal sem alteracoes relevantes\",\n  \"conduct\": \"Acompanhamento preventivo\",\n  \"observations\": \"Sem observacoes adicionais\",\n  \"clinicalNotes\": \"Exame clinico realizado\",\n  \"recommendations\": \"Retorno conforme orientacao veterinaria\",\n  \"prescriptionNotes\": \"Sem prescricao\",\n  \"medications\": []\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/workflows/consultations/register",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "workflows",
-                "consultations",
-                "register"
-              ]
-            }
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{adminSistemaToken}}", "type": "string"}]},
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"name\": \"Clinica Postman Atualizada\",\n  \"cnpj\": \"11222333000181\",\n  \"phone\": \"1133335555\",\n  \"email\": \"clinica.atualizada@exemplo.com\",\n  \"address\": \"Rua Atualizada, 200\"\n}"},
+            "url": "{{baseUrl}}/clinics/{{createdClinicId}}"
           }
-        }
+        },
+        {
+          "name": "Criar Admin da Clinica",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{adminSistemaToken}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"username\": \"admin.clinica.{{stamp}}@exemplo.com\",\n  \"password\": \"123456\"\n}"},
+            "url": "{{baseUrl}}/system/clinics/{{clinicId}}/admins"
+          }
+        },
+        {"name": "Excluir Clinica Criada - Soft Delete", "request": {"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{adminSistemaToken}}", "type": "string"}]}, "method": "DELETE", "url": "{{baseUrl}}/clinics/{{createdClinicId}}"}}
       ]
     },
     {
-      "name": "Cadastros",
+      "name": "02 - Tutores e Pets",
       "item": [
+        {"name": "Listar Tutores", "request": {"method": "GET", "url": "{{baseUrl}}/tutors?page=0&size=10"}},
+        {"name": "Buscar Tutor por Nome", "request": {"method": "GET", "url": "{{baseUrl}}/tutors?name=Carlos&page=0&size=10"}},
+        {"name": "Buscar Tutor por ID", "request": {"method": "GET", "url": "{{baseUrl}}/tutors/{{tutorId}}"}},
         {
-          "name": "Listar Tutores",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/tutors?page=0&size=10",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "tutors"
-              ],
-              "query": [
-                {
-                  "key": "page",
-                  "value": "0"
-                },
-                {
-                  "key": "size",
-                  "value": "10"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "Listar Pets",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/pets?page=0&size=10",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "pets"
-              ],
-              "query": [
-                {
-                  "key": "page",
-                  "value": "0"
-                },
-                {
-                  "key": "size",
-                  "value": "10"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "Listar Veterinarios",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/veterinarians?page=0&size=10",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "veterinarians"
-              ],
-              "query": [
-                {
-                  "key": "page",
-                  "value": "0"
-                },
-                {
-                  "key": "size",
-                  "value": "10"
-                }
-              ]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "Agendamentos",
-      "item": [
-        {
-          "name": "Buscar Agendamento",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/appointments/{{appointmentId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "appointments",
-                "{{appointmentId}}"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Cancelar Agendamento",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/appointments/{{appointmentId}}/cancel",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "appointments",
-                "{{appointmentId}}",
-                "cancel"
-              ]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "Prontuarios",
-      "item": [
-        {
-          "name": "Listar Prontuarios por Pet",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/medical-records/pet/1?page=0&size=10",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "medical-records",
-                "pet",
-                "1"
-              ],
-              "query": [
-                {
-                  "key": "page",
-                  "value": "0"
-                },
-                {
-                  "key": "size",
-                  "value": "10"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "Criar Prontuario com Appointment",
+          "name": "Criar Tutor - ADMIN_CLINICA ou VETERINARIO",
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('criou tutor', () => pm.response.to.have.status(201));",
+            "pm.collectionVariables.set('tutorId', pm.response.json().id);"
+          ]}}],
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"registrationDate\": \"2026-01-10T10:00:00\",\n  \"mainComplaint\": \"Consulta de rotina\",\n  \"diagnosis\": \"Sem alteracoes relevantes\",\n  \"conduct\": \"Acompanhamento preventivo\",\n  \"observations\": \"Sem observacoes\",\n  \"clinicalNotes\": \"Exame clinico realizado\",\n  \"recommendations\": \"Retorno conforme orientacao\",\n  \"prescriptionNotes\": \"Sem prescricao\",\n  \"appointmentId\": {{appointmentId}},\n  \"petId\": 1,\n  \"veterinarianId\": 1\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/medical-records",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "medical-records"
-              ]
-            }
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"name\": \"Tutor Postman {{stamp}}\",\n  \"cpf\": \"9{{stamp}}\",\n  \"phone\": \"11999999999\",\n  \"email\": \"tutor.{{stamp}}@exemplo.com\"\n}"},
+            "url": "{{baseUrl}}/tutors"
+          }
+        },
+        {
+          "name": "Atualizar Tutor",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"name\": \"Tutor Postman Atualizado\",\n  \"cpf\": \"9{{stamp}}\",\n  \"phone\": \"11888888888\",\n  \"email\": \"tutor.{{stamp}}@exemplo.com\"\n}"},
+            "url": "{{baseUrl}}/tutors/{{tutorId}}"
+          }
+        },
+        {"name": "Listar Pets", "request": {"method": "GET", "url": "{{baseUrl}}/pets?page=0&size=10"}},
+        {"name": "Buscar Pet por Nome", "request": {"method": "GET", "url": "{{baseUrl}}/pets?name=Bolt&page=0&size=10"}},
+        {"name": "Buscar Pet por ID", "request": {"method": "GET", "url": "{{baseUrl}}/pets/{{petId}}"}},
+        {
+          "name": "Criar Pet",
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('criou pet', () => pm.response.to.have.status(201));",
+            "pm.collectionVariables.set('petId', pm.response.json().id);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"name\": \"Pet Postman {{stamp}}\",\n  \"species\": \"CACHORRO\",\n  \"breed\": \"SRD\",\n  \"sex\": \"MACHO\",\n  \"birthDate\": \"2021-04-10\",\n  \"weight\": 14.7,\n  \"tutorId\": {{tutorId}}\n}"},
+            "url": "{{baseUrl}}/pets"
+          }
+        },
+        {
+          "name": "Atualizar Pet",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"name\": \"Pet Postman Atualizado\",\n  \"species\": \"CACHORRO\",\n  \"breed\": \"SRD\",\n  \"sex\": \"MACHO\",\n  \"birthDate\": \"2021-04-10\",\n  \"weight\": 15.2,\n  \"tutorId\": {{tutorId}}\n}"},
+            "url": "{{baseUrl}}/pets/{{petId}}"
+          }
+        },
+        {"name": "Excluir Pet - Soft Delete", "request": {"method": "DELETE", "url": "{{baseUrl}}/pets/{{petId}}"}},
+        {"name": "Excluir Tutor - Soft Delete", "request": {"method": "DELETE", "url": "{{baseUrl}}/tutors/{{tutorId}}"}}
+      ]
+    },
+    {
+      "name": "03 - Veterinarios",
+      "item": [
+        {"name": "Listar Veterinarios", "request": {"method": "GET", "url": "{{baseUrl}}/veterinarians?page=0&size=10"}},
+        {"name": "Buscar Veterinario por Nome", "request": {"method": "GET", "url": "{{baseUrl}}/veterinarians?name=Joao&page=0&size=10"}},
+        {"name": "Buscar Veterinario por ID", "request": {"method": "GET", "url": "{{baseUrl}}/veterinarians/{{veterinarianId}}"}},
+        {
+          "name": "Criar Veterinario - ADMIN_CLINICA",
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('criou veterinario', () => pm.response.to.have.status(201));",
+            "pm.collectionVariables.set('veterinarianId', pm.response.json().id);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"name\": \"Vet Postman {{stamp}}\",\n  \"crmv\": \"CRMV-{{stamp}}\",\n  \"phone\": \"11988887777\",\n  \"email\": \"vet.{{stamp}}@exemplo.com\",\n  \"specialty\": \"Clinico geral\",\n  \"clinicId\": {{clinicId}}\n}"},
+            "url": "{{baseUrl}}/veterinarians"
+          }
+        },
+        {
+          "name": "Atualizar Veterinario",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"name\": \"Vet Postman Atualizado\",\n  \"crmv\": \"CRMV-{{stamp}}\",\n  \"phone\": \"11777777777\",\n  \"email\": \"vet.{{stamp}}@exemplo.com\",\n  \"specialty\": \"Dermatologia\",\n  \"clinicId\": {{clinicId}}\n}"},
+            "url": "{{baseUrl}}/veterinarians/{{veterinarianId}}"
+          }
+        },
+        {"name": "Excluir Veterinario - Soft Delete", "request": {"method": "DELETE", "url": "{{baseUrl}}/veterinarians/{{veterinarianId}}"}}
+      ]
+    },
+    {
+      "name": "04 - Disponibilidades",
+      "item": [
+        {"name": "Listar Disponiveis", "request": {"method": "GET", "url": "{{baseUrl}}/veterinarian-availabilities/available?veterinarianId={{veterinarianId}}&start={{futureDateTime}}&end={{futureEndDateTime}}&page=0&size=20"}},
+        {"name": "Listar por Veterinario", "request": {"method": "GET", "url": "{{baseUrl}}/veterinarian-availabilities/veterinarian/{{veterinarianId}}?start={{futureDateTime}}&end={{futureEndDateTime}}&page=0&size=20"}},
+        {
+          "name": "Criar Disponibilidade",
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('criou disponibilidade', () => pm.response.to.have.status(201));",
+            "pm.collectionVariables.set('availabilityId', pm.response.json().id);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"veterinarianId\": {{veterinarianId}},\n  \"startTime\": \"{{futureDateTime}}\",\n  \"endTime\": \"{{futureEndDateTime}}\"\n}"},
+            "url": "{{baseUrl}}/veterinarian-availabilities"
+          }
+        },
+        {"name": "Excluir Disponibilidade", "request": {"method": "DELETE", "url": "{{baseUrl}}/veterinarian-availabilities/{{availabilityId}}"}}
+      ]
+    },
+    {
+      "name": "05 - Agendamentos",
+      "item": [
+        {
+          "name": "Criar Agendamento",
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('criou agendamento', () => pm.response.to.have.status(201));",
+            "pm.collectionVariables.set('appointmentId', pm.response.json().id);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"title\": \"Consulta Postman\",\n  \"description\": \"Consulta criada pelo Postman\",\n  \"dateTime\": \"{{futureDateTime}}\",\n  \"status\": \"PENDENTE\",\n  \"petId\": {{petId}},\n  \"veterinarianId\": {{veterinarianId}},\n  \"clinicId\": {{clinicId}}\n}"},
+            "url": "{{baseUrl}}/appointments"
+          }
+        },
+        {
+          "name": "Workflow Agendar Consulta",
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "if (pm.response.code === 201) pm.collectionVariables.set('appointmentId', pm.response.json().id);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"title\": \"Consulta Workflow Postman\",\n  \"description\": \"Agendamento pelo workflow\",\n  \"petId\": {{petId}},\n  \"clinicId\": {{clinicId}},\n  \"veterinarianId\": {{veterinarianId}},\n  \"dateTime\": \"{{futureDateTime}}\"\n}"},
+            "url": "{{baseUrl}}/workflows/appointments/schedule"
+          }
+        },
+        {"name": "Buscar Agendamento por ID", "request": {"method": "GET", "url": "{{baseUrl}}/appointments/{{appointmentId}}"}},
+        {"name": "Listar Agendamentos por Pet", "request": {"method": "GET", "url": "{{baseUrl}}/appointments/pet/{{petId}}?page=0&size=10"}},
+        {"name": "Buscar Agendamentos por Data", "request": {"method": "GET", "url": "{{baseUrl}}/appointments/search?start={{pastDateTime}}&end={{futureEndDateTime}}&page=0&size=10"}},
+        {
+          "name": "Atualizar Agendamento",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"title\": \"Consulta Postman Atualizada\",\n  \"description\": \"Consulta atualizada pelo Postman\",\n  \"dateTime\": \"{{futureDateTime}}\",\n  \"status\": \"PENDENTE\",\n  \"petId\": {{petId}},\n  \"veterinarianId\": {{veterinarianId}},\n  \"clinicId\": {{clinicId}}\n}"},
+            "url": "{{baseUrl}}/appointments/{{appointmentId}}"
+          }
+        },
+        {"name": "Concluir Agendamento", "request": {"method": "PATCH", "url": "{{baseUrl}}/appointments/{{appointmentId}}/complete"}},
+        {"name": "Cancelar Agendamento", "request": {"method": "PATCH", "url": "{{baseUrl}}/appointments/{{appointmentId}}/cancel"}},
+        {"name": "Relatorio da Consulta JSON", "request": {"method": "GET", "url": "{{baseUrl}}/appointments/{{appointmentId}}/report"}},
+        {"name": "Relatorio da Consulta PDF", "request": {"method": "GET", "url": "{{baseUrl}}/appointments/{{appointmentId}}/report/pdf"}},
+        {"name": "Excluir Agendamento", "request": {"method": "DELETE", "url": "{{baseUrl}}/appointments/{{appointmentId}}"}}
+      ]
+    },
+    {
+      "name": "06 - Prontuarios",
+      "item": [
+        {
+          "name": "Criar Prontuario",
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('criou prontuario', () => pm.response.to.have.status(201));",
+            "pm.collectionVariables.set('medicalRecordId', pm.response.json().id);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"registrationDate\": \"{{pastDateTime}}\",\n  \"mainComplaint\": \"Consulta de rotina\",\n  \"diagnosis\": \"Animal sem alteracoes relevantes\",\n  \"conduct\": \"Acompanhamento preventivo\",\n  \"observations\": \"Sem observacoes adicionais\",\n  \"clinicalNotes\": \"Exame clinico realizado\",\n  \"recommendations\": \"Retorno conforme orientacao veterinaria\",\n  \"prescriptionNotes\": \"Sem prescricao\",\n  \"appointmentId\": null,\n  \"petId\": {{petId}},\n  \"veterinarianId\": {{veterinarianId}}\n}"},
+            "url": "{{baseUrl}}/medical-records"
+          }
+        },
+        {"name": "Buscar Prontuario por ID", "request": {"method": "GET", "url": "{{baseUrl}}/medical-records/{{medicalRecordId}}"}},
+        {"name": "Listar Prontuarios por Pet", "request": {"method": "GET", "url": "{{baseUrl}}/medical-records/pet/{{petId}}?page=0&size=10"}},
+        {"name": "Buscar Prontuarios por Data", "request": {"method": "GET", "url": "{{baseUrl}}/medical-records/search?start={{pastDateTime}}&end={{futureEndDateTime}}&page=0&size=10"}},
+        {
+          "name": "Atualizar Prontuario",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"registrationDate\": \"{{pastDateTime}}\",\n  \"mainComplaint\": \"Consulta de rotina atualizada\",\n  \"diagnosis\": \"Sem alteracoes relevantes\",\n  \"conduct\": \"Acompanhamento preventivo\",\n  \"observations\": \"Sem observacoes adicionais\",\n  \"clinicalNotes\": \"Exame clinico realizado\",\n  \"recommendations\": \"Retorno conforme orientacao veterinaria\",\n  \"prescriptionNotes\": \"Sem prescricao\",\n  \"appointmentId\": null,\n  \"petId\": {{petId}},\n  \"veterinarianId\": {{veterinarianId}}\n}"},
+            "url": "{{baseUrl}}/medical-records/{{medicalRecordId}}"
+          }
+        },
+        {"name": "Excluir Prontuario", "request": {"method": "DELETE", "url": "{{baseUrl}}/medical-records/{{medicalRecordId}}"}}
+      ]
+    },
+    {
+      "name": "07 - Medicamentos",
+      "item": [
+        {
+          "name": "Criar Medicamento",
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('criou medicamento', () => pm.response.to.have.status(201));",
+            "pm.collectionVariables.set('medicationId', pm.response.json().id);"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"name\": \"Medicamento Postman\",\n  \"dosage\": \"1 comprimido\",\n  \"frequency\": \"12/12h\",\n  \"startDate\": \"2026-01-10\",\n  \"endDate\": \"2026-01-20\",\n  \"observations\": \"Administrar apos alimentacao\",\n  \"status\": \"ATIVO\",\n  \"petId\": {{petId}},\n  \"veterinarianId\": {{veterinarianId}}\n}"},
+            "url": "{{baseUrl}}/medications"
+          }
+        },
+        {"name": "Buscar Medicamento por ID", "request": {"method": "GET", "url": "{{baseUrl}}/medications/{{medicationId}}"}},
+        {"name": "Listar Medicamentos por Pet", "request": {"method": "GET", "url": "{{baseUrl}}/medications/pet/{{petId}}?page=0&size=10"}},
+        {
+          "name": "Atualizar Medicamento",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"name\": \"Medicamento Postman Atualizado\",\n  \"dosage\": \"2 comprimidos\",\n  \"frequency\": \"24/24h\",\n  \"startDate\": \"2026-01-10\",\n  \"endDate\": \"2026-01-20\",\n  \"observations\": \"Administrar apos alimentacao\",\n  \"status\": \"ATIVO\",\n  \"petId\": {{petId}},\n  \"veterinarianId\": {{veterinarianId}}\n}"},
+            "url": "{{baseUrl}}/medications/{{medicationId}}"
+          }
+        },
+        {"name": "Excluir Medicamento", "request": {"method": "DELETE", "url": "{{baseUrl}}/medications/{{medicationId}}"}}
+      ]
+    },
+    {
+      "name": "08 - Workflows",
+      "item": [
+        {
+          "name": "Cadastrar Tutor com Pet e Primeiro Acesso",
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('workflow tutor pet 201', () => pm.response.to.have.status(201));",
+            "const json = pm.response.json();",
+            "pm.collectionVariables.set('tutorId', json.tutor.id);",
+            "pm.collectionVariables.set('petId', json.pet.id);",
+            "pm.collectionVariables.set('firstAccessCode', json.firstAccessCode || '');"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"tutor\": {\n    \"name\": \"Tutor Workflow {{stamp}}\",\n    \"cpf\": \"8{{stamp}}\",\n    \"phone\": \"11999999999\",\n    \"email\": \"tutor.workflow.{{stamp}}@exemplo.com\"\n  },\n  \"pet\": {\n    \"name\": \"Pet Workflow {{stamp}}\",\n    \"species\": \"CACHORRO\",\n    \"breed\": \"SRD\",\n    \"sex\": \"MACHO\",\n    \"birthDate\": \"2021-04-10\",\n    \"weight\": 14.7,\n    \"tutorId\": 1\n  }\n}"},
+            "url": "{{baseUrl}}/workflows/tutors/register-with-pet"
+          }
+        },
+        {
+          "name": "Registrar Consulta Completa",
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "if (pm.response.code === 201) {",
+            "  const json = pm.response.json();",
+            "  if (json.medicalRecord && json.medicalRecord.id) pm.collectionVariables.set('medicalRecordId', json.medicalRecord.id);",
+            "}"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"appointmentId\": {{appointmentId}},\n  \"mainComplaint\": \"Consulta de rotina\",\n  \"diagnosis\": \"Animal sem alteracoes relevantes\",\n  \"conduct\": \"Acompanhamento preventivo\",\n  \"observations\": \"Sem observacoes adicionais\",\n  \"clinicalNotes\": \"Exame clinico realizado\",\n  \"recommendations\": \"Retorno conforme orientacao veterinaria\",\n  \"prescriptionNotes\": \"Sem prescricao\",\n  \"medications\": [\n    {\n      \"name\": \"Medicamento Workflow\",\n      \"dosage\": \"1 comprimido\",\n      \"frequency\": \"12/12h\",\n      \"startDate\": \"2026-01-10\",\n      \"endDate\": \"2026-01-20\",\n      \"observations\": \"Administrar apos alimentacao\"\n    }\n  ]\n}"},
+            "url": "{{baseUrl}}/workflows/consultations/register"
           }
         }
       ]

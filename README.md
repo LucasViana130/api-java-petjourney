@@ -33,7 +33,7 @@ API Java Spring Boot para gestao clinica veterinaria, autenticacao por JWT RSA, 
 - Tutor com acesso ao proprio perfil, pets, consultas e dados clinicos permitidos.
 - Cancelamento de consulta com regra de 24 horas e notificacao por e-mail.
 - Soft delete de Clinica, Veterinario, Tutor e Pet para preservar historico e evitar quebra por FK.
-- Collection Postman em `docs/postman/PetJourney.postman_collection.json`.
+- Collection Postman completa em `docs/postman/PetJourney.postman_collection.json`, configurada por padrao para o Railway.
 
 ## Usuarios seed
 
@@ -260,8 +260,8 @@ Started PetJourneyApplication
 Teste:
 
 ```text
-https://SEU-DOMINIO-RAILWAY/swagger-ui.html
-POST https://SEU-DOMINIO-RAILWAY/auth/login
+https://api-java-petjourney-production.up.railway.app/swagger-ui.html
+POST https://api-java-petjourney-production.up.railway.app/auth/login
 ```
 
 Nao use `:8080` na URL publica. O Railway roteia a porta automaticamente.
@@ -276,13 +276,46 @@ Collection:
 docs/postman/PetJourney.postman_collection.json
 ```
 
+URL padrao da collection:
+
+```text
+https://api-java-petjourney-production.up.railway.app
+```
+
+Para testar localmente, altere apenas a variavel `baseUrl` para:
+
+```text
+http://localhost:8080
+```
+
 Fluxo recomendado:
 
 1. Importe a collection.
-2. Ajuste a variavel `baseUrl` para `http://localhost:8080` ou para o dominio do Railway.
-3. Rode `Auth > Login ADMIN_CLINICA`.
-4. O teste da request salva o JWT automaticamente na variavel `token`.
-5. Use as demais requests protegidas.
+2. Confirme a variavel `baseUrl`.
+3. Rode `00 - Auth > Login ADMIN_CLINICA`.
+4. O teste da request salva o JWT automaticamente em `token` e `adminClinicaToken`.
+5. Rode as pastas de consulta e cadastro conforme o perfil.
+6. Deixe requests de exclusao para o final do teste, porque elas fazem soft delete dos registros criados.
+
+A collection cobre:
+
+- Login, `/auth/me` e primeiro acesso.
+- Clinicas e criacao de `ADMIN_CLINICA` pelo `ADMIN_SISTEMA`.
+- Tutores, pets, veterinarios e disponibilidades.
+- Agendamentos, cancelamento, conclusao e relatorios.
+- Prontuarios, medicamentos e workflows completos.
+
+Para testar pelo Swagger no Railway, abra:
+
+```text
+https://api-java-petjourney-production.up.railway.app/swagger-ui.html
+```
+
+Depois de fazer login em `POST /auth/login`, clique em `Authorize` e informe:
+
+```text
+Bearer SEU_TOKEN
+```
 
 ## Testar primeiro acesso por e-mail
 
