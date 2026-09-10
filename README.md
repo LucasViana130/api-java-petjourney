@@ -147,9 +147,14 @@ $env:MAIL_PASSWORD="sua_senha_de_app_do_google"
 $env:MAIL_FROM="PetJourney <seuemail@gmail.com>"
 $env:MAIL_SMTP_AUTH="true"
 $env:MAIL_SMTP_STARTTLS="true"
+$env:MAIL_SMTP_CONNECTION_TIMEOUT="5000"
+$env:MAIL_SMTP_TIMEOUT="5000"
+$env:MAIL_SMTP_WRITE_TIMEOUT="5000"
 ```
 
 No IntelliJ, coloque as variaveis em `Run -> Edit Configurations -> PetJourneyApplication -> Environment variables`, separadas por ponto e virgula e sem `$env:`.
+
+O envio SMTP roda em background. O cadastro de tutor/veterinario nao fica preso esperando o Gmail; confirme sucesso ou falha do envio no log da API.
 
 ### 5. Rodar API
 
@@ -241,6 +246,9 @@ MAIL_PASSWORD=sua_senha_de_app_do_google
 MAIL_FROM=PetJourney <seuemail@gmail.com>
 MAIL_SMTP_AUTH=true
 MAIL_SMTP_STARTTLS=true
+MAIL_SMTP_CONNECTION_TIMEOUT=5000
+MAIL_SMTP_TIMEOUT=5000
+MAIL_SMTP_WRITE_TIMEOUT=5000
 ```
 
 Se `MAIL_ENABLED=false`, o Railway apenas registra o e-mail no log.
@@ -387,6 +395,8 @@ Com `MAIL_ENABLED=true`, o log deve mostrar:
 Enviando e-mail PetJourney via SMTP
 E-mail PetJourney enviado para ...
 ```
+
+Se aparecer `Falha ao enviar e-mail PetJourney`, revise `MAIL_USERNAME`, `MAIL_PASSWORD` com senha de app do Google, `MAIL_FROM` e se a conta Google permite SMTP com senha de app.
 
 Com `MAIL_ENABLED=false`, o log deve mostrar:
 

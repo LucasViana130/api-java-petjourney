@@ -8,10 +8,7 @@ import br.com.fiap.petjourney.models.Veterinarian;
 import br.com.fiap.petjourney.models.enums.UserRole;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -24,25 +21,13 @@ public class EmailService {
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
-    private final ObjectProvider<JavaMailSender> mailSenderProvider;
+    private final SmtpEmailSender smtpEmailSender;
 
     @Value("${petjourney.mail.enabled:false}")
     private boolean mailEnabled;
 
     @Value("${petjourney.mail.from:no-reply@petjourney.com}")
     private String from;
-
-    @Value("${spring.mail.host:}")
-    private String mailHost;
-
-    @Value("${spring.mail.port:587}")
-    private int mailPort;
-
-    @Value("${spring.mail.username:}")
-    private String mailUsername;
-
-    @Value("${spring.mail.password:}")
-    private String mailPassword;
 
     public void sendFirstAccessCode(String to, String tutorName, String code, LocalDateTime expiresAt) {
         String subject = "Primeiro acesso PetJourney";
@@ -101,34 +86,7 @@ public class EmailService {
             return;
         }
 
-        JavaMailSender mailSender = mailSenderProvider.getIfAvailable();
-        if (mailSender == null) {
-            log.error("E-mail PetJourney nao enviado: JavaMailSender indisponivel com MAIL_ENABLED=true");
-            return;
-        }
-
-        try {
-            log.info(
-                    "Enviando e-mail PetJourney via SMTP. host={}, port={}, username={}, passwordConfigured={}, from={}, to={}, subject={}",
-                    mailHost,
-                    mailPort,
-                    valueOrDefault(mailUsername, "nao configurado"),
-                    hasText(mailPassword),
-                    from,
-                    to,
-                    subject
-            );
-
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(from);
-            message.setTo(to);
-            message.setSubject(subject);
-            message.setText(body);
-            mailSender.send(message);
-            log.info("E-mail PetJourney enviado para {} com assunto {}", to, subject);
-        } catch (RuntimeException exception) {
-            log.error("Falha ao enviar e-mail PetJourney para {} com assunto {}", to, subject, exception);
-        }
+        smtpEmailSender.send(from, to, subject, body);
     }
 
     private String cancellationBody(Appointment appointment, UserRole cancelledBy) {
