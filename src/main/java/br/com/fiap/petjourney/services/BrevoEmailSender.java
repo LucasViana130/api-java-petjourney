@@ -33,8 +33,16 @@ public class BrevoEmailSender {
 
     @Async("mailTaskExecutor")
     public void send(String from, String to, String subject, String body) {
-        if (!hasText(apiKey)) {
+        String configuredApiKey = trimToNull(apiKey);
+        String configuredApiUrl = trimToNull(apiUrl);
+
+        if (!hasText(configuredApiKey)) {
             log.error("E-mail PetJourney nao enviado via Brevo: BREVO_API_KEY nao configurada");
+            return;
+        }
+
+        if (!hasText(configuredApiUrl)) {
+            log.error("E-mail PetJourney nao enviado via Brevo: BREVO_API_URL nao configurada");
             return;
         }
 
@@ -50,17 +58,17 @@ public class BrevoEmailSender {
 
             String json = objectMapper.writeValueAsString(requestBody);
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(apiUrl))
+                    .uri(URI.create(configuredApiUrl))
                     .timeout(Duration.ofMillis(timeoutMs))
                     .header("accept", "application/json")
-                    .header("api-key", apiKey)
+                    .header("api-key", configuredApiKey)
                     .header("content-type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(json))
                     .build();
 
             log.info(
                     "Enviando e-mail PetJourney via Brevo. apiUrl={}, timeoutMs={}, from={}, to={}, subject={}",
-                    apiUrl,
+                    configuredApiUrl,
                     timeoutMs,
                     from,
                     to,
@@ -89,6 +97,13 @@ public class BrevoEmailSender {
 
     private boolean hasText(String value) {
         return value != null && !value.isBlank();
+    }
+
+    private String trimToNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)

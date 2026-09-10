@@ -13,7 +13,7 @@ API Java Spring Boot para gestao clinica veterinaria, autenticacao por JWT RSA, 
 - Bean Validation
 - Flyway
 - PostgreSQL
-- Spring Mail SMTP
+- Spring Mail SMTP / Brevo API
 - Spring Cache
 - Spring HATEOAS
 - Springdoc OpenAPI / Swagger
@@ -190,7 +190,7 @@ O Railway executa:
 
 ```text
 mvn -DskipTests package
-java -Xms64m -Xmx256m -XX:MaxMetaspaceSize=160m -XX:ReservedCodeCacheSize=64m -XX:+UseSerialGC -Xss512k -Dspring.jmx.enabled=false -jar target/petjourney-0.0.1-SNAPSHOT.jar
+java -Xms64m -Xmx256m -XX:MaxMetaspaceSize=160m -XX:ReservedCodeCacheSize=64m -XX:+UseSerialGC -Xss512k -Djava.net.preferIPv4Stack=true -Djava.net.preferIPv4Addresses=true -Dspring.jmx.enabled=false -jar target/petjourney-0.0.1-SNAPSHOT.jar
 ```
 
 Os arquivos `.java-version` e `system.properties` indicam Java 17 para o ambiente de build/deploy.
@@ -246,7 +246,7 @@ Se o Railway nao aceitar multiplas linhas, substitua as quebras por `\n`. O back
 
 ### 4. E-mail real no Railway
 
-No Railway, prefira Brevo por API HTTP. SMTP externo pode dar timeout em hospedagens cloud, enquanto a API HTTP usa HTTPS/443.
+Em producao, o envio de e-mail usa Brevo pela API HTTP transacional.
 
 ```properties
 MAIL_ENABLED=true
@@ -257,7 +257,7 @@ BREVO_API_URL=https://api.brevo.com/v3/smtp/email
 BREVO_TIMEOUT_MS=10000
 ```
 
-Passo a passo na Brevo:
+Configuracao na Brevo:
 
 1. Crie uma conta em `brevo.com`.
 2. Valide seu proprio e-mail como remetente.
@@ -265,7 +265,7 @@ Passo a passo na Brevo:
 4. Configure `BREVO_API_KEY` no Railway.
 5. Configure `MAIL_FROM` com o mesmo e-mail remetente validado.
 
-SMTP continua suportado para teste local ou outro provedor:
+SMTP continua suportado para teste local:
 
 ```properties
 MAIL_ENABLED=true
@@ -283,7 +283,7 @@ MAIL_SMTP_TIMEOUT=5000
 MAIL_SMTP_WRITE_TIMEOUT=5000
 ```
 
-Se `MAIL_ENABLED=false`, o Railway apenas registra o e-mail no log.
+Se `MAIL_ENABLED=false`, o backend apenas registra o e-mail no log.
 
 ### 5. Conferir deploy
 
@@ -337,7 +337,7 @@ Fluxo recomendado:
 5. Rode as pastas de consulta e cadastro conforme o perfil.
 6. Deixe requests de exclusao para o final do teste, porque elas fazem soft delete dos registros criados.
 
-Para testar recebimento real de e-mail, altere a variavel da collection `testEmailRecipient` para um e-mail seu antes de rodar o login. Com Gmail, a collection gera aliases unicos como `seuemail+tutor.123@gmail.com` e `seuemail+vet.123@gmail.com`; eles chegam na mesma caixa de entrada, mas continuam diferentes para o banco.
+Para testar recebimento real de e-mail, altere a variavel da collection `testEmailRecipient` para um e-mail seu antes de rodar o login. Com Gmail, a collection gera aliases unicos como `seuemail+tutor.123@gmail.com` e `seuemail+vet.123@gmail.com`; eles chegam na mesma caixa de entrada e evitam conflito de e-mail no banco.
 
 Ao rodar uma nova bateria de testes no Postman, execute novamente `00 - Auth > Login ADMIN_CLINICA`. Essa request gera uma nova rodada de dados dinamicos (`runId`, CPFs e e-mails de teste), reduzindo colisao com registros ja criados no Railway.
 
@@ -431,10 +431,6 @@ E-mail PetJourney enviado via Brevo para ...
 ```
 
 Se aparecer `Falha ao enviar e-mail PetJourney via Brevo`, revise `MAIL_PROVIDER=brevo`, `BREVO_API_KEY` e se o e-mail usado em `MAIL_FROM` foi validado como remetente na Brevo.
-
-Para teste no Railway, use Brevo por API HTTP. O SMTP do Gmail pode sofrer timeout em hospedagens cloud, mesmo com senha de app correta.
-
-Se o log mostrar `HTTP connect timed out` ao chamar a Brevo, confirme que o deploy esta usando o `railway.toml` atual, que forca IPv4 no Java. Depois faca um novo deploy pelo commit mais recente.
 
 Com `MAIL_ENABLED=false`, o log deve mostrar:
 
@@ -555,6 +551,6 @@ SPRING_JMX_ENABLED=false
 - Flyway possui 7 migrations versionadas.
 - A collection Postman esta dentro do repositorio.
 - A API sobe localmente com Docker Compose ou no Railway com PostgreSQL gerenciado.
-- O modo local de e-mail por log permite testar sem credenciais SMTP.
-- O modo real de e-mail funciona com Gmail SMTP usando senha de app.
+- O modo local de e-mail por log permite testar sem credenciais externas.
+- O modo real de e-mail funciona com Brevo API.
 - O projeto foi preparado para nao versionar credenciais reais.
