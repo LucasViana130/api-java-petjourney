@@ -6,6 +6,8 @@ import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.proc.SecurityContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -25,6 +27,13 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.nio.charset.StandardCharsets;
+import java.security.KeyFactory;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Base64;
 import java.util.List;
 
 @Configuration
@@ -61,9 +70,9 @@ public class SecurityConfig {
     }
 
     @Bean
-    JwtEncoder jwtEncoder(RsaKeyProperties rsaKeyProperties) {
-        var publicKey = rsaKeyProperties.publicKey();
-        var privateKey = rsaKeyProperties.privateKey();
+    JwtEncoder jwtEncoder(RsaKeyProperties rsaKeyProperties, ResourceLoader resourceLoader) {
+        RSAPublicKey publicKey = readPublicKey(rsaKeyProperties, resourceLoader);
+        RSAPrivateKey privateKey = readPrivateKey(rsaKeyProperties, resourceLoader);
         RSAKey rsaKey = new RSAKey.Builder(publicKey)
                 .privateKey(privateKey)
                 .build();
@@ -72,9 +81,9 @@ public class SecurityConfig {
     }
 
     @Bean
-    JwtDecoder jwtDecoder(RsaKeyProperties rsaKeyProperties) {
+    JwtDecoder jwtDecoder(RsaKeyProperties rsaKeyProperties, ResourceLoader resourceLoader) {
         return NimbusJwtDecoder
-                .withPublicKey(rsaKeyProperties.publicKey())
+                .withPublicKey(readPublicKey(rsaKeyProperties, resourceLoader))
                 .build();
     }
 
@@ -100,5 +109,51 @@ public class SecurityConfig {
         var source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
+    }
+
+    private RSAPublicKey readPublicKey(RsaKeyProperties properties, ResourceLoader resourceLoader) {
+        try {
+            String pem = readKey(properties.publicKey(), resourceLoader);
+            byte[] decoded = decodePem(pem, "PUBLIC KEY");
+            X509EncodedKeySpec keySpec = new X509EncodedKeySpec(decoded);
+            return (RSAPublicKey) KeyFactory.getInstance("RSA").generatePublic(keySpec);
+        } catch (Exception exception) {
+            throw new IllegalStateException("Nao foi possivel carregar a chave publica RSA", exception);
+        }
+    }
+
+    private RSAPrivateKey readPrivateKey(RsaKeyProperties properties, ResourceLoader resourceLoader) {
+        try {
+            String pem = readKey(properties.privateKey(), resourceLoader);
+            byte[] decoded = decodePem(pem, "PRIVATE KEY");
+            PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(decoded);
+            return (RSAPrivateKey) KeyFactory.getInstance("RSA").generatePrivate(keySpec);
+        } catch (Exception exception) {
+            throw new IllegalStateException("Nao foi possivel carregar a chave privada RSA", exception);
+        }
+    }
+
+    private String readKey(String value, ResourceLoader resourceLoader) throws Exception {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException("Chave RSA nao configurada");
+        }
+
+        String normalized = value.replace("\\n", "\n").trim();
+        if (normalized.contains("BEGIN")) {
+            return normalized;
+        }
+
+        Resource resource = resourceLoader.getResource(normalized);
+        try (var inputStream = resource.getInputStream()) {
+            return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+        }
+    }
+
+    private byte[] decodePem(String pem, String keyType) {
+        String content = pem
+                .replace("-----BEGIN " + keyType + "-----", "")
+                .replace("-----END " + keyType + "-----", "")
+                .replaceAll("\\s", "");
+        return Base64.getDecoder().decode(content);
     }
 }

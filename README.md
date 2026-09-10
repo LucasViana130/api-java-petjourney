@@ -124,6 +124,59 @@ docs/postman/PetJourney.postman_collection.json
 
 Importe essa collection no Postman e rode primeiro `Auth > Login ADMIN_CLINICA`. O teste da request salva o JWT automaticamente na variavel `token` da collection.
 
+## Deploy no Railway
+
+O projeto esta preparado para deploy no Railway usando GitHub + PostgreSQL do Railway.
+
+Arquivos/configuracoes importantes:
+
+- `railway.toml` define o build com Maven e o start do jar.
+- `server.port=${PORT:8080}` permite que a API escute a porta injetada pelo Railway.
+- O banco aceita `DB_URL/DB_USERNAME/DB_PASSWORD` ou as variaveis `PGHOST/PGPORT/PGDATABASE/PGUSER/PGPASSWORD`.
+- As chaves JWT RSA podem ser informadas por variavel de ambiente em formato PEM, sem subir `app.key` e `app.pub` para o Git.
+
+Passo a passo:
+
+1. No Railway, crie um projeto novo.
+2. Adicione um servico PostgreSQL pelo botao `+ New`.
+3. Adicione outro servico usando `Deploy from GitHub repo` e selecione este repositorio.
+4. No servico da API, configure as variaveis:
+
+```properties
+PGHOST=${{Postgres.PGHOST}}
+PGPORT=${{Postgres.PGPORT}}
+PGDATABASE=${{Postgres.PGDATABASE}}
+PGUSER=${{Postgres.PGUSER}}
+PGPASSWORD=${{Postgres.PGPASSWORD}}
+JWT_ISSUER=petjourney-api
+JWT_EXPIRATION_MINUTES=60
+RSA_PRIVATE_KEY=cole_a_chave_privada_pem_aqui
+RSA_PUBLIC_KEY=cole_a_chave_publica_pem_aqui
+MAIL_ENABLED=false
+```
+
+Para envio real por Gmail no Railway, adicione tambem:
+
+```properties
+MAIL_ENABLED=true
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=seuemail@gmail.com
+MAIL_PASSWORD=sua_senha_de_app_do_google
+MAIL_FROM=PetJourney <seuemail@gmail.com>
+MAIL_SMTP_AUTH=true
+MAIL_SMTP_STARTTLS=true
+```
+
+Nunca coloque senha do banco, senha de app do Gmail ou chave privada RSA em arquivo versionado.
+
+Depois do deploy, abra `Settings -> Networking` no servico da API e gere um dominio publico. Teste:
+
+```text
+https://SEU-DOMINIO-RAILWAY/swagger-ui.html
+https://SEU-DOMINIO-RAILWAY/auth/login
+```
+
 ### 6. Login inicial
 
 Usuarios seed para teste:

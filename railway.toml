@@ -1,0 +1,6 @@
+[build]
+builder = "NIXPACKS"
+buildCommand = "mvn -DskipTests package"
+
+[deploy]
+startCommand = "java -jar target/petjourney-0.0.1-SNAPSHOT.jar"
