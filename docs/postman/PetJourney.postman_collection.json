@@ -438,8 +438,12 @@
             "pm.collectionVariables.set('firstAccessCode', json.firstAccessCode || '');"
           ]}}],
           "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{adminClinicaToken}}", "type": "string"}]},
             "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{adminClinicaToken}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
             "body": {"mode": "raw", "raw": "{\n  \"tutor\": {\n    \"name\": \"Tutor Workflow {{runId}}\",\n    \"cpf\": \"{{workflowTutorCpf}}\",\n    \"phone\": \"11999999999\",\n    \"email\": \"{{workflowTutorEmail}}\"\n  },\n  \"pet\": {\n    \"name\": \"Pet Workflow {{runId}}\",\n    \"species\": \"CACHORRO\",\n    \"breed\": \"SRD\",\n    \"sex\": \"MACHO\",\n    \"birthDate\": \"2021-04-10\",\n    \"weight\": 14.7,\n    \"tutorId\": 1\n  }\n}"},
             "url": "{{baseUrl}}/workflows/tutors/register-with-pet"
           }
