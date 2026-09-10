@@ -174,8 +174,10 @@ O Railway executa:
 
 ```text
 mvn -DskipTests package
-java -XX:MaxRAMPercentage=70.0 -XX:+UseSerialGC -Xss512k -jar target/petjourney-0.0.1-SNAPSHOT.jar
+java -Xms64m -Xmx256m -XX:MaxMetaspaceSize=160m -XX:ReservedCodeCacheSize=64m -XX:+UseSerialGC -Xss512k -Dspring.jmx.enabled=false -jar target/petjourney-0.0.1-SNAPSHOT.jar
 ```
+
+Os arquivos `.java-version` e `system.properties` indicam Java 17 para o ambiente de build/deploy.
 
 ### 1. Criar servicos
 
@@ -263,6 +265,8 @@ POST https://SEU-DOMINIO-RAILWAY/auth/login
 ```
 
 Nao use `:8080` na URL publica. O Railway roteia a porta automaticamente.
+
+Se o dominio publico retornar `502`, confira primeiro os logs do ultimo deploy. A API precisa terminar com `Started PetJourneyApplication`. Se aparecer aviso de falta de memoria ou o processo reiniciar apos subir, mantenha os limites de memoria do `railway.toml` e evite habilitar `JPA_SHOW_SQL=true` em producao.
 
 ## Testes pelo Postman
 
@@ -395,12 +399,13 @@ MAIL_SMTP_STARTTLS=true
 ```properties
 JPA_SHOW_SQL=false
 JPA_FORMAT_SQL=false
-DB_POOL_MAX_SIZE=5
+DB_POOL_MAX_SIZE=3
 DB_POOL_MIN_IDLE=1
 DB_CONNECTION_TIMEOUT=30000
-TOMCAT_MAX_THREADS=50
+TOMCAT_MAX_THREADS=25
 TOMCAT_MIN_SPARE_THREADS=5
 DEVTOOLS_RESTART_ENABLED=false
+SPRING_JMX_ENABLED=false
 ```
 
 ## Regras de seguranca e contrato

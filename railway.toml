@@ -3,4 +3,4 @@ builder = "NIXPACKS"
 buildCommand = "mvn -DskipTests package"
 
 [deploy]
-startCommand = "java -XX:MaxRAMPercentage=70.0 -XX:+UseSerialGC -Xss512k -jar target/petjourney-0.0.1-SNAPSHOT.jar"
+startCommand = "java -Xms64m -Xmx256m -XX:MaxMetaspaceSize=160m -XX:ReservedCodeCacheSize=64m -XX:+UseSerialGC -Xss512k -Dspring.jmx.enabled=false -jar target/petjourney-0.0.1-SNAPSHOT.jar"
