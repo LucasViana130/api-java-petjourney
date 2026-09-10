@@ -1,47 +1,109 @@
-# PetJourney
+# PetJourney API
 
-## Como executar localmente
+API Java Spring Boot para gestao clinica veterinaria, autenticacao por JWT RSA, cadastro de clinicas, veterinarios, tutores, pets, consultas, prontuarios, medicamentos, primeiro acesso por e-mail e relatorio de consulta em PDF.
+
+## Tecnologias
+
+- Java 17
+- Spring Boot 3.4.0
+- Spring Web
+- Spring Security
+- OAuth2 Resource Server / JWT RSA
+- Spring Data JPA
+- Bean Validation
+- Flyway
+- PostgreSQL
+- Spring Mail SMTP
+- Spring Cache
+- Spring HATEOAS
+- Springdoc OpenAPI / Swagger
+- OpenPDF
+- H2 para testes
+- Docker Compose para PostgreSQL local
+- Railway para deploy
+
+## Funcionalidades principais
+
+- Login em `POST /auth/login` e rota compatibilidade `POST /login`.
+- JWT assinado com RSA, contendo `role`, `clinicId`, `tutorId` e `veterinarianId`.
+- Primeiro acesso para tutor e veterinario com codigo temporario enviado por e-mail.
+- Administrador geral `ADMIN_SISTEMA` para gerenciar clinicas e criar administradores de clinica.
+- Administrador de clinica `ADMIN_CLINICA` para gerenciar veterinarios, tutores, pets e agenda da clinica.
+- Veterinario com acesso ao escopo da propria clinica.
+- Tutor com acesso ao proprio perfil, pets, consultas e dados clinicos permitidos.
+- Cancelamento de consulta com regra de 24 horas e notificacao por e-mail.
+- Soft delete de Clinica, Veterinario, Tutor e Pet para preservar historico e evitar quebra por FK.
+- Collection Postman em `docs/postman/PetJourney.postman_collection.json`.
+
+## Usuarios seed
+
+Depois que o Flyway roda, estes usuarios ficam disponiveis:
+
+```text
+ADMIN_SISTEMA: admin.sistema@petjourney.com / 123456
+ADMIN_CLINICA: admin.petfeliz@petjourney.com / 123456
+VETERINARIO: joao@petjourney.com / 123456
+TUTOR: carlos@petjourney.com / 123456
+```
+
+Endpoint oficial de login:
+
+```http
+POST /auth/login
+```
+
+Body:
+
+```json
+{
+  "username": "admin.petfeliz@petjourney.com",
+  "password": "123456"
+}
+```
+
+Use o token retornado nas rotas protegidas:
+
+```http
+Authorization: Bearer SEU_TOKEN
+```
+
+## Execucao local
 
 ### Requisitos
 
 - Java 17
 - Maven
 - Docker Desktop ou PostgreSQL local
-- OpenSSL para gerar as chaves RSA
+- OpenSSL
 
-### 1. Subir o PostgreSQL
+### 1. Subir PostgreSQL
 
-O projeto usa PostgreSQL em `localhost:5433`, banco `petjourney`, usuario `postgres` e senha `postgres` por padrao.
+O `compose.yaml` usa PostgreSQL em `localhost:5433`, banco `petjourney`, usuario `postgres` e senha `postgres`.
 
 ```powershell
 docker compose up -d
-```
-
-Se quiser conferir se o container esta rodando:
-
-```powershell
 docker compose ps
 ```
 
-### 2. Gerar as chaves JWT RSA
+### 2. Gerar chaves JWT RSA
 
-As chaves nao ficam no Git por seguranca. Gere antes de iniciar a API:
+As chaves locais nao ficam no Git por seguranca. Gere antes de iniciar a API:
 
 ```powershell
 openssl genpkey -algorithm RSA -out src/main/resources/app.key -pkeyopt rsa_keygen_bits:2048
 openssl rsa -in src/main/resources/app.key -pubout -out src/main/resources/app.pub
 ```
 
-Os arquivos esperados sao:
+Arquivos esperados:
 
 ```text
 src/main/resources/app.key
 src/main/resources/app.pub
 ```
 
-### 3. Configurar o banco
+### 3. Configurar banco local
 
-Se estiver usando o `compose.yaml` sem alterar nada, nao precisa configurar variaveis. A API ja usa:
+Se usar o `compose.yaml` sem alterar nada, nenhuma variavel e obrigatoria. O padrao local e:
 
 ```properties
 DB_URL=jdbc:postgresql://localhost:5433/petjourney
@@ -49,7 +111,7 @@ DB_USERNAME=postgres
 DB_PASSWORD=postgres
 ```
 
-Para usar outra senha ou URL, configure antes de iniciar:
+Para usar outra senha ou outro banco:
 
 ```powershell
 $env:DB_URL="jdbc:postgresql://localhost:5433/petjourney"
@@ -57,24 +119,24 @@ $env:DB_USERNAME="postgres"
 $env:DB_PASSWORD="sua_senha_local"
 ```
 
-Se mudar a senha do container, use tambem:
+Se mudar a senha do container:
 
 ```powershell
 $env:POSTGRES_PASSWORD="sua_senha_local"
 docker compose up -d
 ```
 
-### 4. Configurar e-mail
+### 4. Configurar e-mail local
 
-Para entrega local sem envio real, mantenha:
+Por padrao, o envio real fica desligado:
 
 ```powershell
 $env:MAIL_ENABLED="false"
 ```
 
-Nesse modo, o codigo de primeiro acesso aparece no log da API.
+Nesse modo, os e-mails aparecem no log da API, incluindo codigo de primeiro acesso.
 
-Para envio real com Gmail, use uma senha de app do Google. Nao use a senha normal da conta:
+Para envio real com Gmail SMTP, use senha de app do Google, nunca a senha normal da conta:
 
 ```powershell
 $env:MAIL_ENABLED="true"
@@ -87,75 +149,86 @@ $env:MAIL_SMTP_AUTH="true"
 $env:MAIL_SMTP_STARTTLS="true"
 ```
 
-No IntelliJ, coloque essas variaveis em `Run -> Edit Configurations -> PetJourneyApplication -> Environment variables`, sem `$env:` e separadas por ponto e virgula:
+No IntelliJ, coloque as variaveis em `Run -> Edit Configurations -> PetJourneyApplication -> Environment variables`, separadas por ponto e virgula e sem `$env:`.
 
-```text
-MAIL_ENABLED=true;MAIL_HOST=smtp.gmail.com;MAIL_PORT=587;MAIL_USERNAME=seuemail@gmail.com;MAIL_PASSWORD=sua_senha_de_app_do_google;MAIL_FROM=PetJourney <seuemail@gmail.com>;MAIL_SMTP_AUTH=true;MAIL_SMTP_STARTTLS=true
-```
-
-### 5. Rodar a API
-
-Pelo terminal:
+### 5. Rodar API
 
 ```powershell
 mvn spring-boot:run
 ```
 
-Ou pelo IntelliJ, execute a classe `PetJourneyApplication`.
+Ou execute `PetJourneyApplication` pelo IntelliJ.
 
-Quando subir corretamente, o log deve mostrar:
-
-```text
-Tomcat started on port 8080
-Started PetJourneyApplication
-```
-
-Swagger:
+URLs locais:
 
 ```text
-http://localhost:8080/swagger-ui.html
+Swagger: http://localhost:8080/swagger-ui.html
+OpenAPI JSON: http://localhost:8080/api-docs
 ```
-
-Collection Postman:
-
-```text
-docs/postman/PetJourney.postman_collection.json
-```
-
-Importe essa collection no Postman e rode primeiro `Auth > Login ADMIN_CLINICA`. O teste da request salva o JWT automaticamente na variavel `token` da collection.
 
 ## Deploy no Railway
 
-O projeto esta preparado para deploy no Railway usando GitHub + PostgreSQL do Railway.
+O repositorio esta preparado para Railway com `railway.toml`.
 
-Arquivos/configuracoes importantes:
+O Railway executa:
 
-- `railway.toml` define o build com Maven e o start do jar.
-- `server.port=${PORT:8080}` permite que a API escute a porta injetada pelo Railway.
-- O banco aceita `DB_URL/DB_USERNAME/DB_PASSWORD` ou as variaveis `PGHOST/PGPORT/PGDATABASE/PGUSER/PGPASSWORD`.
-- As chaves JWT RSA podem ser informadas por variavel de ambiente em formato PEM, sem subir `app.key` e `app.pub` para o Git.
-
-Passo a passo:
-
-1. No Railway, crie um projeto novo.
-2. Adicione um servico PostgreSQL pelo botao `+ New`.
-3. Adicione outro servico usando `Deploy from GitHub repo` e selecione este repositorio.
-4. No servico da API, configure as variaveis:
-
-```properties
-PGHOST=${{Postgres.PGHOST}}
-PGPORT=${{Postgres.PGPORT}}
-PGDATABASE=${{Postgres.PGDATABASE}}
-PGUSER=${{Postgres.PGUSER}}
-PGPASSWORD=${{Postgres.PGPASSWORD}}
-JWT_ISSUER=petjourney-api
-JWT_EXPIRATION_MINUTES=60
-RSA_PRIVATE_KEY=cole_a_chave_privada_pem_aqui
-RSA_PUBLIC_KEY=cole_a_chave_publica_pem_aqui
-MAIL_ENABLED=false
+```text
+mvn -DskipTests package
+java -XX:MaxRAMPercentage=70.0 -XX:+UseSerialGC -Xss512k -jar target/petjourney-0.0.1-SNAPSHOT.jar
 ```
 
-Para envio real por Gmail no Railway, adicione tambem:
+### 1. Criar servicos
+
+1. Crie um projeto no Railway.
+2. Adicione um servico PostgreSQL.
+3. Adicione um servico para a API usando `Deploy from GitHub repo`.
+4. Gere um dominio publico em `Settings -> Networking` no servico da API.
+
+### 2. Variaveis obrigatorias da API
+
+Configure no servico da API, nao no Postgres:
+
+```properties
+DB_URL=jdbc:postgresql://HOST_DO_POSTGRES:PORTA_DO_POSTGRES/NOME_DO_BANCO
+DB_USERNAME=USUARIO_DO_POSTGRES
+DB_PASSWORD=SENHA_DO_POSTGRES
+JWT_ISSUER=petjourney-api
+JWT_EXPIRATION_MINUTES=60
+RSA_PRIVATE_KEY=conteudo_completo_da_chave_privada_pem
+RSA_PUBLIC_KEY=conteudo_completo_da_chave_publica_pem
+```
+
+Para montar `DB_URL`, copie do servico PostgreSQL do Railway:
+
+```text
+DB_URL=jdbc:postgresql://PGHOST:PGPORT/PGDATABASE
+DB_USERNAME=PGUSER
+DB_PASSWORD=PGPASSWORD
+```
+
+Nao use `localhost` no Railway. Dentro do container, `localhost` aponta para a propria API, nao para o banco.
+
+### 3. Chaves RSA no Railway
+
+Copie localmente:
+
+```powershell
+Get-Content -Raw src/main/resources/app.key
+Get-Content -Raw src/main/resources/app.pub
+```
+
+Cole o conteudo completo da chave privada em `RSA_PRIVATE_KEY` e da chave publica em `RSA_PUBLIC_KEY`, incluindo cabecalho e rodape do PEM.
+
+```properties
+RSA_PRIVATE_KEY=<conteudo_completo_da_chave_privada_pem>
+RSA_PUBLIC_KEY=<conteudo_completo_da_chave_publica_pem>
+```
+
+Se o Railway nao aceitar multiplas linhas, substitua as quebras por `\n`. O backend aceita os dois formatos.
+
+### 4. E-mail real no Railway
+
+Para que o e-mail seja enviado de verdade, configure:
 
 ```properties
 MAIL_ENABLED=true
@@ -168,56 +241,56 @@ MAIL_SMTP_AUTH=true
 MAIL_SMTP_STARTTLS=true
 ```
 
-Nunca coloque senha do banco, senha de app do Gmail ou chave privada RSA em arquivo versionado.
+Se `MAIL_ENABLED=false`, o Railway apenas registra o e-mail no log.
 
-Depois do deploy, abra `Settings -> Networking` no servico da API e gere um dominio publico. Teste:
+### 5. Conferir deploy
+
+O log esperado deve conter:
+
+```text
+HikariPool-1 - Start completed
+Successfully validated 7 migrations
+Schema "public" is up to date
+Tomcat started
+Started PetJourneyApplication
+```
+
+Teste:
 
 ```text
 https://SEU-DOMINIO-RAILWAY/swagger-ui.html
-https://SEU-DOMINIO-RAILWAY/auth/login
+POST https://SEU-DOMINIO-RAILWAY/auth/login
 ```
 
-### 6. Login inicial
+Nao use `:8080` na URL publica. O Railway roteia a porta automaticamente.
 
-Usuarios seed para teste:
+## Testes pelo Postman
+
+Collection:
 
 ```text
-ADMIN_SISTEMA: admin.sistema@petjourney.com / 123456
-ADMIN_CLINICA: admin.petfeliz@petjourney.com / 123456
-VETERINARIO: joao@petjourney.com / 123456
-TUTOR: carlos@petjourney.com / 123456
+docs/postman/PetJourney.postman_collection.json
 ```
 
-Endpoint oficial de login:
+Fluxo recomendado:
+
+1. Importe a collection.
+2. Ajuste a variavel `baseUrl` para `http://localhost:8080` ou para o dominio do Railway.
+3. Rode `Auth > Login ADMIN_CLINICA`.
+4. O teste da request salva o JWT automaticamente na variavel `token`.
+5. Use as demais requests protegidas.
+
+## Testar primeiro acesso por e-mail
+
+### Tutor com pet
+
+Com token de `ADMIN_CLINICA` ou `VETERINARIO`:
 
 ```http
-POST http://localhost:8080/auth/login
+POST /workflows/tutors/register-with-pet
 ```
 
 Body:
-
-```json
-{
-  "username": "admin.petfeliz@petjourney.com",
-  "password": "123456"
-}
-```
-
-Use o token retornado no header:
-
-```http
-Authorization: Bearer SEU_TOKEN
-```
-
-### 7. Testar primeiro acesso por e-mail
-
-Com token de `ADMIN_CLINICA`, chame:
-
-```http
-POST http://localhost:8080/workflows/tutors/register-with-pet
-```
-
-Body de exemplo:
 
 ```json
 {
@@ -239,63 +312,72 @@ Body de exemplo:
 }
 ```
 
-Use um CPF novo em cada teste. Se `MAIL_ENABLED=false`, o codigo aparece no log. Se `MAIL_ENABLED=true`, o backend envia pelo SMTP configurado.
+Use CPF e e-mail novos em cada teste.
 
-### 8. Rodar testes
+### Veterinario
+
+Com token de `ADMIN_CLINICA`:
+
+```http
+POST /veterinarians
+```
+
+Body:
+
+```json
+{
+  "name": "Vet Teste Email",
+  "crmv": "CRMV-TESTE-001",
+  "phone": "11988887777",
+  "email": "email_destino@exemplo.com",
+  "specialty": "Clinico geral",
+  "clinicId": 1
+}
+```
+
+Com `MAIL_ENABLED=true`, o log deve mostrar:
+
+```text
+Enviando e-mail PetJourney via SMTP
+E-mail PetJourney enviado para ...
+```
+
+Com `MAIL_ENABLED=false`, o log deve mostrar:
+
+```text
+E-mail PetJourney em modo local
+```
+
+## Testes automatizados
 
 ```powershell
 mvn test
 ```
 
-## Configuracao local detalhada
+Os testes usam H2 e Flyway com perfil `test`, sem exigir PostgreSQL local.
 
-Por padrao, o projeto espera PostgreSQL em `localhost:5433` com banco `petjourney`, usuario `postgres` e senha `postgres`.
+## Variaveis de ambiente
 
-Para usar outra senha ou URL, configure variaveis de ambiente antes de iniciar:
+### Banco
 
 ```properties
 DB_URL=jdbc:postgresql://localhost:5433/petjourney
 DB_USERNAME=postgres
-DB_PASSWORD=sua_senha_local
-POSTGRES_PASSWORD=sua_senha_local
+DB_PASSWORD=postgres
 ```
 
-Nao coloque senhas reais em `application.properties`, `compose.yaml`, `.env` versionado ou arquivos da IDE.
+No Railway tambem e possivel usar `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER` e `PGPASSWORD`, mas `DB_URL`, `DB_USERNAME` e `DB_PASSWORD` sao mais explicitos.
 
-## Chaves JWT RSA
-
-O projeto usa JWT com RSA. As chaves locais de desenvolvimento ficam fora do Git:
-
-```text
-src/main/resources/app.key
-src/main/resources/app.pub
-```
-
-Gere as chaves localmente antes de subir a aplicacao:
-
-```bash
-openssl genpkey -algorithm RSA -out src/main/resources/app.key -pkeyopt rsa_keygen_bits:2048
-openssl rsa -in src/main/resources/app.key -pubout -out src/main/resources/app.pub
-```
-
-Tambem e possivel apontar outros arquivos por variaveis:
+### JWT RSA
 
 ```properties
 RSA_PRIVATE_KEY=classpath:app.key
 RSA_PUBLIC_KEY=classpath:app.pub
+JWT_ISSUER=petjourney-api
+JWT_EXPIRATION_MINUTES=60
 ```
 
-## E-mail
-
-O envio de e-mail e feito pelo backend. O front/mobile apenas chama a API; o fluxo correto e:
-
-```text
-Front/Mobile -> Backend -> SMTP configurado -> Usuario
-```
-
-Por padrao, o ambiente local nao envia e-mail real. Com `MAIL_ENABLED=false`, o backend registra no log o conteudo que seria enviado, incluindo o codigo de primeiro acesso do tutor. Esse modo nao exige host SMTP, usuario, senha ou API key.
-
-### Variaveis de ambiente
+### E-mail SMTP
 
 ```properties
 MAIL_ENABLED=false
@@ -308,85 +390,68 @@ MAIL_SMTP_AUTH=true
 MAIL_SMTP_STARTTLS=true
 ```
 
-### Gmail via SMTP
-
-Para teste gratuito com Gmail, use uma senha de app do Google. Nao use a senha normal da conta.
+### Performance/runtime
 
 ```properties
-MAIL_ENABLED=true
-MAIL_HOST=smtp.gmail.com
-MAIL_PORT=587
-MAIL_USERNAME=seuemail@gmail.com
-MAIL_PASSWORD=sua_senha_de_app
-MAIL_FROM=PetJourney <seuemail@gmail.com>
-MAIL_SMTP_AUTH=true
-MAIL_SMTP_STARTTLS=true
+JPA_SHOW_SQL=false
+JPA_FORMAT_SQL=false
+DB_POOL_MAX_SIZE=5
+DB_POOL_MIN_IDLE=1
+DB_CONNECTION_TIMEOUT=30000
+TOMCAT_MAX_THREADS=50
+TOMCAT_MIN_SPARE_THREADS=5
+DEVTOOLS_RESTART_ENABLED=false
 ```
 
-O Gmail pode reescrever o remetente para a conta autenticada. Para entrega de faculdade/teste, isso costuma ser suficiente.
+## Regras de seguranca e contrato
 
-### Resend via SMTP
+- Nunca versionar senhas, API keys, `.env`, `app.key` ou `app.pub`.
+- Use `.env.example` apenas como referencia; ele nao contem credenciais reais.
+- O front/mobile nunca envia e-mail diretamente; ele chama a API e o backend envia pelo SMTP configurado.
+- `POST /auth/login` e o endpoint oficial de login.
+- `POST /login` continua disponivel por compatibilidade.
+- O username/e-mail no login e no primeiro acesso e normalizado com `trim().toLowerCase()`.
+- `GET /auth/me` pode ser usado pelo front/mobile para restaurar sessao.
+- As listagens `GET /veterinarians`, `GET /tutors` e `GET /pets` retornam pagina Spring; leia `response.content`.
+- `PetResponse` retorna `tutorId` e `tutorName`.
+- Enums devem ser enviados exatamente como a API espera, por exemplo `CACHORRO`, `GATO`, `MACHO` e `FEMEA`.
 
-Para envio real com Resend:
+## Regras de acesso
 
-```properties
-MAIL_ENABLED=true
-MAIL_HOST=smtp.resend.com
-MAIL_PORT=587
-MAIL_USERNAME=resend
-MAIL_PASSWORD=<API_KEY_DA_RESEND>
-MAIL_FROM=PetJourney <no-reply@seudominio.com>
-MAIL_SMTP_AUTH=true
-MAIL_SMTP_STARTTLS=true
-```
+- `ADMIN_SISTEMA` tem visao global das clinicas.
+- `ADMIN_SISTEMA` gerencia clinicas e cria `ADMIN_CLINICA`.
+- `ADMIN_CLINICA` gerencia veterinarios, tutores, pets e agenda da propria clinica.
+- `VETERINARIO` atua dentro da propria clinica.
+- `TUTOR` acessa apenas seus dados, pets e informacoes clinicas permitidas.
+- Tutor nao pode excluir agendamento diretamente; deve usar `PATCH /appointments/{id}/cancel`.
+- Tutor pode consultar prontuario e medicamentos do proprio pet, mas nao pode criar, editar ou excluir dados clinicos.
 
-Nunca coloque credenciais SMTP ou API keys no codigo, no `application.properties` ou em arquivos versionados. Use variaveis de ambiente no ambiente de execucao.
+## Primeiro acesso
 
-### Fluxos com e-mail
-
-Primeiro acesso do tutor:
-
+- Tutor nao possui cadastro publico.
 - `ADMIN_CLINICA` ou `VETERINARIO` cadastra tutor junto com pet.
-- O backend cria a conta do tutor como inativa.
-- O backend gera um codigo temporario de primeiro acesso.
-- O backend envia o codigo para o e-mail do tutor ou registra no log quando `MAIL_ENABLED=false`.
-- O tutor usa "Primeiro acesso" no app para informar e-mail, codigo e criar a propria senha.
+- `ADMIN_CLINICA` cadastra veterinario.
+- O backend cria a conta como inativa.
+- O backend gera codigo temporario de primeiro acesso.
+- O codigo e enviado por e-mail ou registrado no log quando `MAIL_ENABLED=false`.
+- O usuario ativa a conta em `POST /auth/first-access/activate`.
 - Senhas nunca sao enviadas por e-mail.
+- `firstAccessCode` ainda aparece na resposta do cadastro tutor + pet para facilitar testes locais e Postman.
 
-Cancelamento de consulta:
+## Exclusoes
 
-- `PATCH /appointments/{id}/cancel` mantem a regra de 24 horas.
-- Se quem cancelou foi `TUTOR`, o backend notifica o veterinario; se o veterinario nao tiver e-mail, notifica a clinica.
-- Se quem cancelou foi `VETERINARIO` ou `ADMIN_CLINICA`, o backend notifica o tutor.
-- Se o destinatario estiver vazio, o backend registra warning e nao interrompe a operacao.
+- Clinica, Veterinario, Tutor e Pet usam soft delete com `active=false`.
+- Registros desativados deixam de aparecer nas telas operacionais e retornam 404 nas consultas comuns.
+- Ao excluir uma clinica, o backend desativa administradores da clinica, veterinarios, tutores, pets e contas vinculadas.
+- Ao excluir um tutor, o backend desativa a conta do tutor e seus pets.
+- Ao excluir um veterinario, o backend desativa a conta do veterinario.
+- O historico clinico fica preservado no banco.
 
-## Contrato para Mobile
+## Observacoes para avaliacao
 
-- Existe um administrador geral com role `ADMIN_SISTEMA`: `admin.sistema@petjourney.com` / `123456` nos dados seed.
-- `ADMIN_SISTEMA` tem a visao global de clinicas com `GET /clinics`.
-- `ADMIN_SISTEMA` gerencia clinicas com `POST /clinics`, `PUT /clinics/{id}` e `DELETE /clinics/{id}`.
-- `ADMIN_SISTEMA` cria administradores de clinica com `POST /system/clinics/{clinicId}/admins`.
-- `GET /clinics/{id}` pode ser usado por perfis autenticados, mas o backend restringe o acesso ao escopo permitido; ADMIN_CLINICA, VETERINARIO e TUTOR nao possuem listagem global.
-- Use `POST /auth/login` como endpoint oficial de login.
-- O endpoint `POST /login` continua disponivel por compatibilidade.
-- O e-mail/username enviado no login e no primeiro acesso e normalizado com `trim().toLowerCase()`, entao maiusculas, minusculas e espacos acidentais nao alteram o usuario encontrado.
-- Envie `Authorization: Bearer TOKEN` nas rotas protegidas.
-- Use `GET /auth/me` para restaurar/validar sessao.
-- As listagens `GET /veterinarians`, `GET /tutors` e `GET /pets` retornam pagina Spring; no Mobile, leia os dados em `response.content`.
-- `PetResponse` retorna `tutorId` e `tutorName`; use `tutorId` ao editar pet com `PUT /pets/{id}`.
-- No workflow `POST /workflows/tutors/register-with-pet`, o `pet.tutorId` enviado pelo cliente e ignorado; o backend sempre usa o tutor criado na mesma requisicao.
-- Os enums enviados pelo Mobile devem manter os valores da API, por exemplo `CACHORRO`, `GATO`, `MACHO` e `FEMEA`.
-- `ADMIN_CLINICA` pode excluir Tutor/Pet/Veterinario conforme regras da API; `VETERINARIO` nao deve exibir botoes de exclusao.
-- As exclusoes de Clinica, Veterinario, Tutor e Pet usam soft delete: o registro fica preservado no banco com `active=false`, deixa de aparecer nas telas operacionais e nao quebra historico clinico.
-- Ao excluir uma clinica, o backend tambem desativa seus administradores de clinica, veterinarios, tutores, pets e respectivas contas de acesso.
-- Tutor nao pode excluir agendamento diretamente; deve usar `PATCH /appointments/{id}/cancel`, que aplica as regras de negocio.
-- Tutor pode consultar prontuario e medicamento do proprio pet, mas nao pode criar, editar nem excluir dados clinicos.
-- `TutorRequest` nao recebe senha; a senha do tutor sempre e criada em `POST /auth/first-access/activate`.
-- Tutor nao pode alterar o proprio CPF pelo `PUT /tutors/{id}`.
-- O e-mail do tutor fica imutavel quando existe conta de acesso associada, pois ele e usado como username de login.
-- Ao excluir um tutor, o backend desativa a conta de acesso associada e seus pets, preservando consultas, prontuarios e medicamentos historicos.
-- Ao cadastrar veterinario com e-mail, o backend cria uma conta `VETERINARIO` inativa, gera codigo de primeiro acesso e envia/loga o codigo.
-- O e-mail do veterinario fica imutavel quando existe conta de acesso associada, pois ele e usado como username de login.
-- Ao excluir um veterinario, o backend desativa a conta de acesso associada, preservando consultas, prontuarios e medicamentos historicos.
-- Ao cadastrar tutor com pet, o backend cria uma conta `TUTOR` inativa, gera codigo de primeiro acesso e envia/loga o codigo.
-- O campo `firstAccessCode` ainda aparece na resposta do cadastro tutor + pet para facilitar testes locais.
+- Flyway possui 7 migrations versionadas.
+- A collection Postman esta dentro do repositorio.
+- A API sobe localmente com Docker Compose ou no Railway com PostgreSQL gerenciado.
+- O modo local de e-mail por log permite testar sem credenciais SMTP.
+- O modo real de e-mail funciona com Gmail SMTP usando senha de app.
+- O projeto foi preparado para nao versionar credenciais reais.
