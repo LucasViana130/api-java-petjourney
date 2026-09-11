@@ -46,11 +46,7 @@ public class VeterinarianService {
             return repository.findByClinicIdAndActiveTrue(clinicId, pageable).map(VeterinarianResponse::fromEntity);
         }
 
-        if (name != null && !name.isBlank()) {
-            return repository.findByActiveTrueAndNameContainingIgnoreCase(name, pageable).map(VeterinarianResponse::fromEntity);
-        }
-
-        return repository.findByActiveTrue(pageable).map(VeterinarianResponse::fromEntity);
+        throw new ForbiddenOperationException("Administrador do sistema nao acessa veterinarios clinicos");
     }
 
     public VeterinarianResponse findById(Long id) {
@@ -108,8 +104,7 @@ public class VeterinarianService {
             return repository.findByIdAndClinicIdAndActiveTrue(id, authenticatedUser.clinicId())
                     .orElseThrow(() -> new ResourceNotFoundException("Veterinario nao encontrado para esta clinica"));
         }
-        return repository.findByIdAndActiveTrue(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Veterinario nao encontrado"));
+        throw new ForbiddenOperationException("Administrador do sistema nao acessa veterinarios clinicos");
     }
 
     private void assertAdminClinic() {

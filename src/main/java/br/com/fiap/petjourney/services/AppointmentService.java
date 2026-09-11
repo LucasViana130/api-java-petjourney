@@ -48,7 +48,7 @@ public class AppointmentService {
             return repository.findByPetIdAndVeterinarianId(petId, authenticatedUser.veterinarianId(), pageable)
                     .map(AppointmentResponse::fromEntity);
         }
-        return repository.findByPetId(petId, pageable).map(AppointmentResponse::fromEntity);
+        throw new ForbiddenOperationException("Administrador do sistema nao acessa agendamentos clinicos");
     }
 
     public Page<AppointmentResponse> findByDateRange(LocalDateTime start, LocalDateTime end, Pageable pageable) {
@@ -67,7 +67,7 @@ public class AppointmentService {
             return repository.findByVeterinarianIdAndDateTimeBetween(authenticatedUser.veterinarianId(), start, end, pageable)
                     .map(AppointmentResponse::fromEntity);
         }
-        return repository.findByDateTimeBetween(start, end, pageable).map(AppointmentResponse::fromEntity);
+        throw new ForbiddenOperationException("Administrador do sistema nao acessa agendamentos clinicos");
     }
 
     public AppointmentResponse findById(Long id) {
@@ -90,17 +90,7 @@ public class AppointmentService {
         validateAvailableSlot(veterinarian.getId(), request.dateTime());
         validateScheduleConflict(veterinarian.getId(), request.dateTime(), null);
 
-        if (request.status() == null) {
-            request = new AppointmentRequest(
-                    request.title(),
-                    request.description(),
-                    request.dateTime(),
-                    AppointmentStatus.PENDENTE,
-                    request.petId(),
-                    request.veterinarianId(),
-                    request.clinicId()
-            );
-        }
+        request = withStatus(request, AppointmentStatus.PENDENTE);
 
         return AppointmentResponse.fromEntity(repository.save(new Appointment(request, pet, veterinarian, clinic)));
     }
@@ -123,7 +113,7 @@ public class AppointmentService {
         validateAvailableSlot(veterinarian.getId(), request.dateTime());
         validateScheduleConflict(veterinarian.getId(), request.dateTime(), id);
 
-        appointment.updateFrom(request, pet, veterinarian, clinic);
+        appointment.updateFrom(withStatus(request, appointment.getStatus()), pet, veterinarian, clinic);
         return AppointmentResponse.fromEntity(repository.save(appointment));
     }
 
@@ -210,8 +200,23 @@ public class AppointmentService {
         if (role == UserRole.VETERINARIO && !appointment.getVeterinarian().getId().equals(authenticatedUser.veterinarianId())) {
             throw new ForbiddenOperationException("Veterinario nao pode acessar agendamento de outro veterinario");
         }
+        if (role == UserRole.ADMIN_SISTEMA) {
+            throw new ForbiddenOperationException("Administrador do sistema nao acessa agendamentos clinicos");
+        }
 
         return appointment;
+    }
+
+    private AppointmentRequest withStatus(AppointmentRequest request, AppointmentStatus status) {
+        return new AppointmentRequest(
+                request.title(),
+                request.description(),
+                request.dateTime(),
+                status,
+                request.petId(),
+                request.veterinarianId(),
+                request.clinicId()
+        );
     }
 
     private Long resolveClinicIdForSchedule(ScheduleAppointmentRequest request, Veterinarian veterinarian) {

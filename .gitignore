@@ -1,9 +1,12 @@
 target/
+src/test/
 .idea/
 *.iml
 .vscode/
 .env
 .env.*
 !.env.example
+.java-version
+system.properties
 src/main/resources/app.key
 src/main/resources/app.pub

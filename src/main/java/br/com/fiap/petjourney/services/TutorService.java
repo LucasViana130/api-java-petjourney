@@ -54,11 +54,7 @@ public class TutorService {
             return repository.findClientsByClinicId(clinicId, pageable).map(TutorResponse::fromEntity);
         }
 
-        if (name != null && !name.isBlank()) {
-            return repository.findByActiveTrueAndNameContainingIgnoreCase(name, pageable).map(TutorResponse::fromEntity);
-        }
-
-        return repository.findByActiveTrue(pageable).map(TutorResponse::fromEntity);
+        throw new ForbiddenOperationException("Administrador do sistema nao acessa tutores clinicos");
     }
 
     public TutorResponse findById(Long id) {
@@ -134,8 +130,7 @@ public class TutorService {
                     .orElseThrow(() -> new ResourceNotFoundException("Tutor não encontrado para esta clínica"));
         }
 
-        return repository.findByIdAndActiveTrue(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Tutor não encontrado"));
+        throw new ForbiddenOperationException("Administrador do sistema nao acessa tutores clinicos");
     }
 
     private void createInactiveTutorAccess(Tutor tutor) {

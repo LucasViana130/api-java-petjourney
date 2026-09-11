@@ -76,7 +76,8 @@ public class AppointmentController {
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Atualizar agendamento (incluindo status)")
+    @PreAuthorize("hasAnyRole('ADMIN_CLINICA', 'VETERINARIO')")
+    @Operation(summary = "Atualizar dados do agendamento")
     public ResponseEntity<AppointmentResponse> update(@PathVariable Long id, @RequestBody @Valid AppointmentRequest request) {
         AppointmentResponse app = service.update(id, request);
         app.add(linkTo(methodOn(AppointmentController.class).getById(id)).withSelfRel());

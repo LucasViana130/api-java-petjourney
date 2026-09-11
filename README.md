@@ -42,7 +42,7 @@ Depois que o Flyway roda, estes usuarios ficam disponiveis:
 ```text
 ADMIN_SISTEMA: admin.sistema@petjourney.com / 123456
 ADMIN_CLINICA: admin.petfeliz@petjourney.com / 123456
-VETERINARIO: joao@petjourney.com / 123456
+VETERINARIO: dr.joao@petjourney.com / 123456
 TUTOR: carlos@petjourney.com / 123456
 ```
 
@@ -192,8 +192,6 @@ O Railway executa:
 mvn -DskipTests package
 java -Xms64m -Xmx256m -XX:MaxMetaspaceSize=160m -XX:ReservedCodeCacheSize=64m -XX:+UseSerialGC -Xss512k -Djava.net.preferIPv4Stack=true -Djava.net.preferIPv4Addresses=true -Dspring.jmx.enabled=false -jar target/petjourney-0.0.1-SNAPSHOT.jar
 ```
-
-Os arquivos `.java-version` e `system.properties` indicam Java 17 para o ambiente de build/deploy.
 
 ### 1. Criar servicos
 

@@ -50,7 +50,7 @@ public class MedicalRecordService {
             return repository.findByPetIdAndVeterinarianId(petId, authenticatedUser.veterinarianId(), pageable)
                     .map(MedicalRecordResponse::fromEntity);
         }
-        return repository.findByPetId(petId, pageable).map(MedicalRecordResponse::fromEntity);
+        throw new ForbiddenOperationException("Administrador do sistema nao acessa prontuarios clinicos");
     }
 
     @Cacheable(
@@ -71,7 +71,7 @@ public class MedicalRecordService {
             return repository.findByVeterinarianIdAndRegistrationDateBetween(authenticatedUser.veterinarianId(), start, end, pageable)
                     .map(MedicalRecordResponse::fromEntity);
         }
-        return repository.findByRegistrationDateBetween(start, end, pageable).map(MedicalRecordResponse::fromEntity);
+        throw new ForbiddenOperationException("Administrador do sistema nao acessa prontuarios clinicos");
     }
 
     @Cacheable(value = "medicalRecords", key = "{@authenticatedUserService.username(), 'id', #id}")
@@ -161,6 +161,9 @@ public class MedicalRecordService {
         }
         if (role == UserRole.VETERINARIO && !record.getVeterinarian().getId().equals(authenticatedUser.veterinarianId())) {
             throw new ForbiddenOperationException("Veterinario nao pode acessar prontuario de outro veterinario");
+        }
+        if (role == UserRole.ADMIN_SISTEMA) {
+            throw new ForbiddenOperationException("Administrador do sistema nao acessa prontuarios clinicos");
         }
     }
 

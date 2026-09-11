@@ -47,11 +47,7 @@ public class PetService {
             return repository.findPatientsByClinicId(clinicId, pageable).map(PetResponse::fromEntity);
         }
 
-        if (name != null && !name.isBlank()) {
-            return repository.findByActiveTrueAndNameContainingIgnoreCase(name, pageable).map(PetResponse::fromEntity);
-        }
-
-        return repository.findByActiveTrue(pageable).map(PetResponse::fromEntity);
+        throw new ForbiddenOperationException("Administrador do sistema nao acessa pets clinicos");
     }
 
     @Cacheable(value = "pets", key = "{@authenticatedUserService.username(), 'id', #id}")
@@ -98,8 +94,7 @@ public class PetService {
             return repository.findPatientByIdAndClinicId(id, authenticatedUser.clinicId())
                     .orElseThrow(() -> new ResourceNotFoundException("Pet não encontrado para esta clínica"));
         }
-        return repository.findByIdAndActiveTrue(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Pet não encontrado"));
+        throw new ForbiddenOperationException("Administrador do sistema nao acessa pets clinicos");
     }
 
     private Tutor resolveTutorForWrite(Long requestTutorId) {

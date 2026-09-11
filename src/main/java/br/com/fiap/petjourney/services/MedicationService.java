@@ -45,7 +45,7 @@ public class MedicationService {
             return repository.findByPetIdAndVeterinarianId(petId, authenticatedUser.veterinarianId(), pageable)
                     .map(MedicationResponse::fromEntity);
         }
-        return repository.findByPetId(petId, pageable).map(MedicationResponse::fromEntity);
+        throw new ForbiddenOperationException("Administrador do sistema nao acessa medicamentos clinicos");
     }
 
     @Cacheable(value = "medications", key = "{@authenticatedUserService.username(), 'id', #id}")
@@ -109,6 +109,9 @@ public class MedicationService {
         }
         if (role == UserRole.VETERINARIO && !medication.getVeterinarian().getId().equals(authenticatedUser.veterinarianId())) {
             throw new ForbiddenOperationException("Veterinario nao pode acessar medicamento de outro veterinario");
+        }
+        if (role == UserRole.ADMIN_SISTEMA) {
+            throw new ForbiddenOperationException("Administrador do sistema nao acessa medicamentos clinicos");
         }
 
         return medication;
