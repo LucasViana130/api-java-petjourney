@@ -456,14 +456,6 @@ Com `MAIL_ENABLED=false`, o log deve mostrar:
 E-mail PetJourney em modo local
 ```
 
-## Testes automatizados
-
-```powershell
-mvn test
-```
-
-Os testes usam H2 e Flyway com perfil `test`, sem exigir PostgreSQL local.
-
 ## Variaveis de ambiente
 
 ### Banco
@@ -554,21 +546,3 @@ SPRING_JMX_ENABLED=false
 - O usuario ativa a conta em `POST /auth/first-access/activate`.
 - Senhas nunca sao enviadas por e-mail.
 - `firstAccessCode` ainda aparece na resposta do cadastro tutor + pet para facilitar testes locais e Postman.
-
-## Exclusoes
-
-- Clinica, Veterinario, Tutor e Pet usam soft delete com `active=false`.
-- Registros desativados deixam de aparecer nas telas operacionais e retornam 404 nas consultas comuns.
-- Ao excluir uma clinica, o backend desativa administradores da clinica, veterinarios, tutores, pets e contas vinculadas.
-- Ao excluir um tutor, o backend desativa a conta do tutor e seus pets.
-- Ao excluir um veterinario, o backend desativa a conta do veterinario.
-- O historico clinico fica preservado no banco.
-
-## Observacoes para avaliacao
-
-- Flyway possui 7 migrations versionadas.
-- A collection Postman esta dentro do repositorio.
-- A API sobe localmente com Docker Compose ou no Railway com PostgreSQL gerenciado.
-- O modo local de e-mail por log permite testar sem credenciais externas.
-- O modo real de e-mail funciona com Brevo API.
-- O projeto foi preparado para nao versionar credenciais reais.
