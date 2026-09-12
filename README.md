@@ -2,6 +2,25 @@
 
 API Java Spring Boot para gestao clinica veterinaria, autenticacao por JWT RSA, cadastro de clinicas, veterinarios, tutores, pets, consultas, prontuarios, medicamentos, primeiro acesso por e-mail e relatorio de consulta em PDF.
 
+## Integrantes
+
+| Nome | RM |
+|---|---|
+| Lucas Gonçalves Viana | 563254 |
+| Deryk de Souza Queiroz | 563412 |
+| Vinicius Paschoeto da Silva | 563089 |
+| Felipe Wiclif Leal da Silva| 563901 |
+
+---
+
+## Links da entrega
+
+| Item | Link |
+|---|---|
+| Video Youtube | x |
+| Repositório GitHub | x |
+| Repositório Front End | x |
+
 ## Tecnologias
 
 - Java 17
