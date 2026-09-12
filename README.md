@@ -51,7 +51,6 @@ API Java Spring Boot para gestao clinica veterinaria, autenticacao por JWT RSA, 
 - Administrador de clinica `ADMIN_CLINICA` para gerenciar veterinarios, tutores, pets e agenda da clinica.
 - Veterinario com acesso ao escopo da propria clinica.
 - Tutor com acesso ao proprio perfil, pets, consultas e dados clinicos permitidos.
-- Cancelamento de consulta com regra de 24 horas e notificacao por e-mail.
 - Soft delete de Clinica, Veterinario, Tutor e Pet para preservar historico e evitar quebra por FK.
 - Collection Postman completa em `docs/postman/PetJourney.postman_collection.json`, configurada por padrao para o Railway.
 
