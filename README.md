@@ -17,7 +17,7 @@ API Java Spring Boot para gestao clinica veterinaria, autenticacao por JWT RSA, 
 
 | Item | Link |
 |---|---|
-| Video Youtube | x |
+| Video Youtube | https://www.youtube.com/watch?v=gfT_4wNRK2c |
 | Repositório GitHub | https://github.com/LucasViana130/api-java-petjourney.git |
 | Repositório Front End | https://github.com/deryksouza2006/PetJourney2.0.git |
 | Deploy Railway | api-java-petjourney-production.up.railway.app |
