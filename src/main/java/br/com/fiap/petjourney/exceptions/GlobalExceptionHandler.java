@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.LocalDateTime;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -121,7 +122,26 @@ public class GlobalExceptionHandler {
             DataIntegrityViolationException ex,
             HttpServletRequest request
     ) {
+        SqlStateErrorMapper.ErrorMapping mapping = sqlStateMapping(ex);
+        if (mapping != null) {
+            return buildError(mapping.status(), mapping.message(), request);
+        }
         return buildError(HttpStatus.CONFLICT, dataIntegrityMessage(ex), request);
+    }
+
+    @ExceptionHandler(DatabaseProcedureException.class)
+    public ResponseEntity<ErrorResponse> handleDatabaseProcedure(
+            DatabaseProcedureException ex,
+            HttpServletRequest request
+    ) {
+        SqlStateErrorMapper.ErrorMapping mapping = SqlStateErrorMapper.find(ex.getSqlState());
+        if (mapping != null) {
+            return buildError(mapping.status(), mapping.message(), request);
+        }
+
+        log.error("Falha inesperada em rotina do banco no endpoint {} (SQLSTATE={})",
+                request.getRequestURI(), ex.getSqlState(), ex);
+        return buildError(HttpStatus.INTERNAL_SERVER_ERROR, "Ocorreu um erro inesperado no servidor", request);
     }
 
     @ExceptionHandler(Exception.class)
@@ -191,5 +211,16 @@ public class GlobalExceptionHandler {
             current = current.getCause();
         }
         return current.getMessage() != null ? current.getMessage() : "";
+    }
+
+    private SqlStateErrorMapper.ErrorMapping sqlStateMapping(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof SQLException sqlException) {
+                return SqlStateErrorMapper.find(sqlException.getSQLState());
+            }
+            current = current.getCause();
+        }
+        return null;
     }
 }

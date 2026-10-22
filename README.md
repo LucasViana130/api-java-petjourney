@@ -1,6 +1,6 @@
 # PetJourney API
 
-API Java Spring Boot para gestao clinica veterinaria, autenticacao por JWT RSA, cadastro de clinicas, veterinarios, tutores, pets, consultas, prontuarios, medicamentos, primeiro acesso por e-mail e relatorio de consulta em PDF.
+API Java Spring Boot para gestao clinica veterinaria, autenticacao por JWT RSA, cadastro de clinicas, veterinarios, tutores, pets, consultas, prontuarios, medicamentos, primeiro acesso por e-mail, relatorio de consulta em PDF e relatorios consolidados por procedures PostgreSQL.
 
 ## Integrantes
 
@@ -33,6 +33,7 @@ API Java Spring Boot para gestao clinica veterinaria, autenticacao por JWT RSA, 
 - Bean Validation
 - Flyway
 - PostgreSQL
+- JdbcTemplate para chamada segura de procedures PostgreSQL
 - Spring Mail SMTP / Brevo API
 - Spring Cache
 - Spring HATEOAS
@@ -52,6 +53,8 @@ API Java Spring Boot para gestao clinica veterinaria, autenticacao por JWT RSA, 
 - Veterinario com acesso ao escopo da propria clinica.
 - Tutor com acesso ao proprio perfil, pets, consultas e dados clinicos permitidos.
 - Soft delete de Clinica, Veterinario, Tutor e Pet para preservar historico e evitar quebra por FK.
+- Relatorio JSON de pets da clinica gerado por `pkg_petjourney.prc_relatorio_pets_json`.
+- Relatorio de pesos por especie e sexo gerado por `pkg_petjourney.prc_relatorio_peso_pets`.
 - Collection Postman completa em `docs/postman/PetJourney.postman_collection.json`, configurada por padrao para o Railway.
 
 ## Usuarios seed
@@ -85,6 +88,70 @@ Use o token retornado nas rotas protegidas:
 ```http
 Authorization: Bearer SEU_TOKEN
 ```
+
+## Relatorios PostgreSQL da Sprint 4
+
+Os relatorios usam as procedures do schema `pkg_petjourney` e retornam JSON estruturado pela API. O cliente nunca envia `clinicId`: o backend obtem a clinica diretamente do JWT autenticado.
+
+Nesta primeira versao, somente `ADMIN_CLINICA` possui acesso:
+
+```http
+GET /reports/pets
+GET /reports/pets/weight
+GET /reports/pets/weight?species=GATO
+```
+
+Resposta de `GET /reports/pets`:
+
+```json
+[
+  {
+    "petId": 1,
+    "tutorId": 1,
+    "clinicId": 1,
+    "pet": "Rex",
+    "tutor": "Carlos Souza",
+    "clinica": "Clinica Veterinaria Pet Feliz"
+  }
+]
+```
+
+Resposta de `GET /reports/pets/weight`:
+
+```json
+[
+  {
+    "tipo": "DETALHE",
+    "species": "CACHORRO",
+    "sex": "MACHO",
+    "pesoKg": 32.50
+  },
+  {
+    "tipo": "SUBTOTAL",
+    "species": "CACHORRO",
+    "sex": null,
+    "pesoKg": 32.50
+  },
+  {
+    "tipo": "TOTAL",
+    "species": null,
+    "sex": null,
+    "pesoKg": 32.50
+  }
+]
+```
+
+O filtro `species` aceita `CACHORRO`, `GATO`, `AVE`, `ROEDOR`, `REPTIL` e `OUTRO`. Clinica valida sem pets retorna `[]`.
+
+Erros de negocio das procedures usam SQLSTATE `PJxxx`. A API converte esses codigos para respostas HTTP seguras, sem retornar SQL, credenciais ou stack trace.
+
+### Migrations da Sprint 4
+
+- `V8__petjourney_objetos_tecnicos.sql`: cria o schema `pkg_petjourney`, auditoria e log tecnico.
+- `V9__petjourney_integridade_e_gatilhos.sql`: adiciona restricoes, indices, coerencia entre clinicas e auditoria de agendamentos.
+- `V10__petjourney_rotinas.sql`: cria procedures, funcoes e relatorios.
+
+Em uma base nova, o Flyway executa normalmente V1 ate V10. Antes de atualizar um ambiente existente, confira `flyway_schema_history`: se versoes antigas de V8 a V10 ja tiverem sido aplicadas, nao substitua os arquivos nem execute `flyway repair`; preserve os checksums e use a migration corretiva V11 fornecida no pacote PostgreSQL da Sprint 4.
 
 ## Execucao local
 
@@ -191,6 +258,8 @@ $env:BREVO_API_KEY="sua_api_key_da_brevo"
 ```powershell
 mvn spring-boot:run
 ```
+
+Na inicializacao, o Flyway aplica as migrations pendentes ate V10 e o Hibernate valida o esquema com `spring.jpa.hibernate.ddl-auto=validate`.
 
 Ou execute `PetJourneyApplication` pelo IntelliJ.
 
@@ -308,7 +377,7 @@ O log esperado deve conter:
 
 ```text
 HikariPool-1 - Start completed
-Successfully validated 7 migrations
+Successfully validated 10 migrations
 Schema "public" is up to date
 Tomcat started
 Started PetJourneyApplication
@@ -384,6 +453,18 @@ Depois de fazer login em `POST /auth/login`, clique em `Authorize` e informe:
 ```text
 Bearer SEU_TOKEN
 ```
+
+## Testes automatizados
+
+Execute:
+
+```powershell
+mvn test
+```
+
+Os testes automatizados cobrem derivacao da clinica autenticada, bloqueio de perfis, binding dos parametros JDBC, `NULL` tipado, conversao dos documentos JSON pelo Jackson e mapeamento dos SQLSTATEs.
+
+Para validar as migrations e procedures de forma integrada, use um PostgreSQL isolado e uma base vazia. A sequencia deve ser V1 ate V8, diagnostico somente leitura, V9 e V10. Nao use a fixture reconstruida do pacote sobre o banco da aplicacao.
 
 ## Testar primeiro acesso por e-mail
 
@@ -523,14 +604,18 @@ SPRING_JMX_ENABLED=false
 - As listagens `GET /veterinarians`, `GET /tutors` e `GET /pets` retornam pagina Spring; leia `response.content`.
 - `PetResponse` retorna `tutorId` e `tutorName`.
 - Enums devem ser enviados exatamente como a API espera, por exemplo `CACHORRO`, `GATO`, `MACHO` e `FEMEA`.
+- Os endpoints de relatorio retornam arrays JSON, nao strings contendo JSON escapado.
+- O cliente nao pode informar uma clinica arbitraria para os relatorios; o escopo vem do token.
 
 ## Regras de acesso
 
 - `ADMIN_SISTEMA` tem visao global das clinicas.
 - `ADMIN_SISTEMA` gerencia clinicas e cria `ADMIN_CLINICA`.
 - `ADMIN_CLINICA` gerencia veterinarios, tutores, pets e agenda da propria clinica.
+- `ADMIN_CLINICA` acessa os relatorios PostgreSQL apenas da propria clinica.
 - `VETERINARIO` atua dentro da propria clinica.
 - `TUTOR` acessa apenas seus dados, pets e informacoes clinicas permitidas.
+- `ADMIN_SISTEMA`, `VETERINARIO` e `TUTOR` nao acessam os relatorios da Sprint 4 nesta primeira versao.
 - Tutor nao pode excluir agendamento diretamente; deve usar `PATCH /appointments/{id}/cancel`.
 - Tutor pode consultar prontuario e medicamentos do proprio pet, mas nao pode criar, editar ou excluir dados clinicos.
 
