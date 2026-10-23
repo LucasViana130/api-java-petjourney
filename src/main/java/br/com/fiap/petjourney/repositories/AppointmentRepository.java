@@ -1,6 +1,7 @@
 package br.com.fiap.petjourney.repositories;
 
 import br.com.fiap.petjourney.models.Appointment;
+import br.com.fiap.petjourney.models.enums.AppointmentStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -23,6 +24,20 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     Page<Appointment> findByClinicIdAndDateTimeBetween(Long clinicId, LocalDateTime start, LocalDateTime end, Pageable pageable);
     Page<Appointment> findByPetTutorIdAndDateTimeBetween(Long tutorId, LocalDateTime start, LocalDateTime end, Pageable pageable);
     Page<Appointment> findByVeterinarianIdAndDateTimeBetween(Long veterinarianId, LocalDateTime start, LocalDateTime end, Pageable pageable);
+
+    @Query("""
+            select count(a) > 0 from Appointment a
+            where a.pet.id = :petId
+              and a.dateTime > :dateTime
+              and a.status = :status
+              and a.clinic.active = true
+              and a.veterinarian.active = true
+            """)
+    boolean existsValidUpcomingForPet(
+            @Param("petId") Long petId,
+            @Param("dateTime") LocalDateTime dateTime,
+            @Param("status") AppointmentStatus status
+    );
 
     @Query("""
             select count(a) > 0 from Appointment a

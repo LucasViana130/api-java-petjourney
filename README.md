@@ -1,6 +1,6 @@
 # PetJourney API
 
-API Java Spring Boot para gestao clinica veterinaria, autenticacao por JWT RSA, cadastro de clinicas, veterinarios, tutores, pets, consultas, prontuarios, medicamentos, primeiro acesso por e-mail, relatorio de consulta em PDF e relatorios consolidados por procedures PostgreSQL.
+API Java Spring Boot para gestao clinica veterinaria, autenticacao por JWT RSA, cadastro de clinicas, veterinarios, tutores, pets, consultas, prontuarios, medicamentos, primeiro acesso por e-mail, relatorio de consulta em PDF, relatorios consolidados por procedures PostgreSQL e integracao SmartCare com servico Python/FastAPI.
 
 ## Integrantes
 
@@ -27,6 +27,7 @@ API Java Spring Boot para gestao clinica veterinaria, autenticacao por JWT RSA, 
 - Java 17
 - Spring Boot 3.4.0
 - Spring Web
+- Spring `RestClient` para integracao HTTP com o SmartCare
 - Spring Security
 - OAuth2 Resource Server / JWT RSA
 - Spring Data JPA
@@ -55,6 +56,7 @@ API Java Spring Boot para gestao clinica veterinaria, autenticacao por JWT RSA, 
 - Soft delete de Clinica, Veterinario, Tutor e Pet para preservar historico e evitar quebra por FK.
 - Relatorio JSON de pets da clinica gerado por `pkg_petjourney.prc_relatorio_pets_json`.
 - Relatorio de pesos por especie e sexo gerado por `pkg_petjourney.prc_relatorio_peso_pets`.
+- Analise SmartCare individual e ranking da clinica, usando fatos clinicos obtidos pelo backend Java e score calculado exclusivamente pelo servico Python.
 - Collection Postman completa em `docs/postman/PetJourney.postman_collection.json`, configurada por padrao para o Railway.
 
 ## Usuarios seed
@@ -153,6 +155,66 @@ Erros de negocio das procedures usam SQLSTATE `PJxxx`. A API converte esses codi
 
 Em uma base nova, o Flyway executa normalmente V1 ate V10. Antes de atualizar um ambiente existente, confira `flyway_schema_history`: se versoes antigas de V8 a V10 ja tiverem sido aplicadas, nao substitua os arquivos nem execute `flyway repair`; preserve os checksums e use a migration corretiva V11 fornecida no pacote PostgreSQL da Sprint 4.
 
+## SmartCare
+
+A integracao segue o fluxo:
+
+```text
+Mobile -> Java -> PostgreSQL (fatos clinicos) -> Python/FastAPI -> Java -> Mobile
+```
+
+O Python nao acessa diretamente o PostgreSQL. O Java autentica o usuario, deriva a clinica do JWT, valida o acesso ao pet e envia ao SmartCare apenas os fatos necessarios. O backend Java nao calcula score, nao inventa analise de contingencia e nao grava score no banco.
+
+Endpoints:
+
+```http
+GET /smartcare/pets/{petId}/analysis
+GET /smartcare/ranking
+```
+
+Somente `ADMIN_CLINICA` e `VETERINARIO` podem acessar esses endpoints. `TUTOR` e `ADMIN_SISTEMA` recebem `403`. Um pet de outra clinica nao fica acessivel e o cliente nao informa `clinicId`.
+
+Resposta individual:
+
+```json
+{
+  "petId": 1,
+  "score": 50,
+  "prioridade": "MEDIA",
+  "motivos": ["Acompanhamento recomendado"],
+  "recomendacao": "Manter retorno programado"
+}
+```
+
+Resposta do ranking:
+
+```json
+{
+  "analises": [
+    {
+      "petId": 1,
+      "petName": "Rex",
+      "score": 50,
+      "prioridade": "MEDIA",
+      "motivos": ["Acompanhamento recomendado"],
+      "recomendacao": "Manter retorno programado"
+    }
+  ],
+  "semDadosSuficientes": [
+    {
+      "petId": 2,
+      "petName": "Mel"
+    }
+  ]
+}
+```
+
+O Java chama `POST /smartcare/analisar` no endereco configurado por `SMARTCARE_BASE_URL`. Antes de repassar a resposta, valida o `petId`, o score entre `0` e `100`, as prioridades `BAIXA`, `MEDIA` ou `ALTA`, os motivos e a recomendacao.
+
+- `422 Unprocessable Entity`: o pet nao possui prontuario valido ate a data atual; o Python nao e chamado.
+- `503 Service Unavailable`: o Python esta offline, excedeu o timeout, retornou erro HTTP ou enviou resposta invalida.
+- O ranking e interrompido integralmente em falha externa; nao ha resposta parcial.
+
 ## Execucao local
 
 ### Requisitos
@@ -161,6 +223,7 @@ Em uma base nova, o Flyway executa normalmente V1 ate V10. Antes de atualizar um
 - Maven
 - Docker Desktop ou PostgreSQL local
 - OpenSSL
+- Python e o projeto FastAPI do SmartCare, para integracao com a IA real
 
 ### 1. Subir PostgreSQL
 
@@ -253,7 +316,28 @@ $env:MAIL_FROM="PetJourney <seuemail@gmail.com>"
 $env:BREVO_API_KEY="sua_api_key_da_brevo"
 ```
 
-### 5. Rodar API
+### 5. Iniciar o SmartCare Python
+
+Na pasta do servico FastAPI, siga o README do projeto Python e exponha `POST /smartcare/analisar` em `http://localhost:8001`. Se o projeto usar `main.py` como entrada, o comando convencional e:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+uvicorn main:app --host 127.0.0.1 --port 8001
+```
+
+Configure a API Java:
+
+```powershell
+$env:SMARTCARE_BASE_URL="http://localhost:8001"
+$env:SMARTCARE_CONNECT_TIMEOUT="2s"
+$env:SMARTCARE_READ_TIMEOUT="5s"
+```
+
+O ZIP Java e os arquivos SmartCare localizados durante esta integracao nao continham o servico FastAPI. Por isso, confirme o modulo de entrada no README do projeto Python; nao use um mock como substituto da IA real.
+
+### 6. Rodar API
 
 ```powershell
 mvn spring-boot:run
@@ -262,6 +346,8 @@ mvn spring-boot:run
 Na inicializacao, o Flyway aplica as migrations pendentes ate V10 e o Hibernate valida o esquema com `spring.jpa.hibernate.ddl-auto=validate`.
 
 Ou execute `PetJourneyApplication` pelo IntelliJ.
+
+No IntelliJ, em `Run -> Edit Configurations -> PetJourneyApplication -> Environment variables`, configure no minimo `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `MAIL_ENABLED=false` e `SMARTCARE_BASE_URL`. Mantenha `RSA_PRIVATE_KEY` e `RSA_PUBLIC_KEY` apontando para as chaves locais ignoradas pelo Git.
 
 URLs locais:
 
@@ -341,6 +427,14 @@ MAIL_FROM=PetJourney <seuemail@gmail.com>
 BREVO_API_KEY=sua_api_key_da_brevo
 BREVO_API_URL=https://api.brevo.com/v3/smtp/email
 BREVO_TIMEOUT_MS=10000
+```
+
+### SmartCare
+
+```properties
+SMARTCARE_BASE_URL=http://localhost:8001
+SMARTCARE_CONNECT_TIMEOUT=2s
+SMARTCARE_READ_TIMEOUT=5s
 ```
 
 Configuracao na Brevo:
@@ -462,7 +556,14 @@ Execute:
 mvn test
 ```
 
-Os testes automatizados cobrem derivacao da clinica autenticada, bloqueio de perfis, binding dos parametros JDBC, `NULL` tipado, conversao dos documentos JSON pelo Jackson e mapeamento dos SQLSTATEs.
+Os testes automatizados cobrem derivacao da clinica autenticada, bloqueio de perfis, binding dos parametros JDBC, `NULL` tipado, conversao dos documentos JSON pelo Jackson, mapeamento dos SQLSTATEs, construcao dos fatos SmartCare, ranking, dados insuficientes, timeout, indisponibilidade e validacao da resposta externa.
+
+Exemplos locais, depois de obter um token de `ADMIN_CLINICA` ou `VETERINARIO`:
+
+```powershell
+curl.exe -H "Authorization: Bearer SEU_TOKEN" http://localhost:8080/smartcare/pets/1/analysis
+curl.exe -H "Authorization: Bearer SEU_TOKEN" http://localhost:8080/smartcare/ranking
+```
 
 Para validar as migrations e procedures de forma integrada, use um PostgreSQL isolado e uma base vazia. A sequencia deve ser V1 ate V8, diagnostico somente leitura, V9 e V10. Nao use a fixture reconstruida do pacote sobre o banco da aplicacao.
 
@@ -606,6 +707,8 @@ SPRING_JMX_ENABLED=false
 - Enums devem ser enviados exatamente como a API espera, por exemplo `CACHORRO`, `GATO`, `MACHO` e `FEMEA`.
 - Os endpoints de relatorio retornam arrays JSON, nao strings contendo JSON escapado.
 - O cliente nao pode informar uma clinica arbitraria para os relatorios; o escopo vem do token.
+- O cliente nao pode informar uma clinica arbitraria para o SmartCare; o escopo tambem vem do token.
+- A indisponibilidade do Python retorna `503`, sem calculo alternativo no Java.
 
 ## Regras de acesso
 
@@ -613,9 +716,11 @@ SPRING_JMX_ENABLED=false
 - `ADMIN_SISTEMA` gerencia clinicas e cria `ADMIN_CLINICA`.
 - `ADMIN_CLINICA` gerencia veterinarios, tutores, pets e agenda da propria clinica.
 - `ADMIN_CLINICA` acessa os relatorios PostgreSQL apenas da propria clinica.
+- `ADMIN_CLINICA` e `VETERINARIO` acessam o SmartCare apenas para pets ativos da propria clinica.
 - `VETERINARIO` atua dentro da propria clinica.
 - `TUTOR` acessa apenas seus dados, pets e informacoes clinicas permitidas.
 - `ADMIN_SISTEMA`, `VETERINARIO` e `TUTOR` nao acessam os relatorios da Sprint 4 nesta primeira versao.
+- `TUTOR` e `ADMIN_SISTEMA` nao acessam os endpoints SmartCare.
 - Tutor nao pode excluir agendamento diretamente; deve usar `PATCH /appointments/{id}/cancel`.
 - Tutor pode consultar prontuario e medicamentos do proprio pet, mas nao pode criar, editar ou excluir dados clinicos.
 

@@ -22,6 +22,10 @@ public interface MedicalRecordRepository extends JpaRepository<MedicalRecord, Lo
     Page<MedicalRecord> findByPetTutorIdAndRegistrationDateBetween(Long tutorId, LocalDateTime start, LocalDateTime end, Pageable pageable);
     Page<MedicalRecord> findByVeterinarianClinicIdAndRegistrationDateBetween(Long clinicId, LocalDateTime start, LocalDateTime end, Pageable pageable);
     Page<MedicalRecord> findByVeterinarianIdAndRegistrationDateBetween(Long veterinarianId, LocalDateTime start, LocalDateTime end, Pageable pageable);
+    Optional<MedicalRecord> findFirstByPetIdAndRegistrationDateLessThanEqualOrderByRegistrationDateDescIdDesc(
+            Long petId,
+            LocalDateTime registrationDate
+    );
     Optional<MedicalRecord> findByAppointmentId(Long appointmentId);
     boolean existsByAppointmentId(Long appointmentId);
 }

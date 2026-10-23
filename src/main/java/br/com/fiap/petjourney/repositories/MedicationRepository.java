@@ -1,10 +1,13 @@
 package br.com.fiap.petjourney.repositories;
 
 import br.com.fiap.petjourney.models.Medication;
+import br.com.fiap.petjourney.models.enums.MedicationStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+
+import java.util.Collection;
 
 @Repository
 public interface MedicationRepository extends JpaRepository<Medication, Long> {
@@ -16,4 +19,5 @@ public interface MedicationRepository extends JpaRepository<Medication, Long> {
     Page<Medication> findByVeterinarianClinicId(Long clinicId, Pageable pageable);
     Page<Medication> findByVeterinarianId(Long veterinarianId, Pageable pageable);
     Page<Medication> findByMedicalRecordId(Long medicalRecordId, Pageable pageable);
+    boolean existsByPetIdAndStatusIn(Long petId, Collection<MedicationStatus> statuses);
 }

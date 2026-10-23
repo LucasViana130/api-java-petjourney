@@ -17,6 +17,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class PetService {
@@ -95,6 +97,14 @@ public class PetService {
                     .orElseThrow(() -> new ResourceNotFoundException("Pet não encontrado para esta clínica"));
         }
         throw new ForbiddenOperationException("Administrador do sistema nao acessa pets clinicos");
+    }
+
+    public List<Pet> findAccessibleClinicalPets() {
+        UserRole role = authenticatedUser.role();
+        if (role == UserRole.ADMIN_CLINICA || role == UserRole.VETERINARIO) {
+            return repository.findPatientsByClinicId(authenticatedUser.clinicId(), Pageable.unpaged()).getContent();
+        }
+        throw new ForbiddenOperationException("Perfil sem permissao para acessar pets clinicos");
     }
 
     private Tutor resolveTutorForWrite(Long requestTutorId) {

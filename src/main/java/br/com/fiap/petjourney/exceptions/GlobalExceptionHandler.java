@@ -88,6 +88,23 @@ public class GlobalExceptionHandler {
         return buildError(HttpStatus.CONFLICT, ex.getMessage(), request);
     }
 
+    @ExceptionHandler(SmartCareDataUnavailableException.class)
+    public ResponseEntity<ErrorResponse> handleSmartCareDataUnavailable(
+            SmartCareDataUnavailableException ex,
+            HttpServletRequest request
+    ) {
+        return buildError(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(SmartCareUnavailableException.class)
+    public ResponseEntity<ErrorResponse> handleSmartCareUnavailable(
+            SmartCareUnavailableException ex,
+            HttpServletRequest request
+    ) {
+        log.warn("SmartCare indisponivel ao processar {}: {}", request.getRequestURI(), ex.getMessage());
+        return buildError(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage(), request);
+    }
+
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDenied(
             AccessDeniedException ex,
