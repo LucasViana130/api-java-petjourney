@@ -38,6 +38,28 @@ class SmartCareControllerTest {
     }
 
     @Test
+    void shouldReturnLowPriorityAnalysisWithoutReasons() throws Exception {
+        SmartCareService service = mock(SmartCareService.class);
+        when(service.analyze(1L)).thenReturn(new SmartCareAnalysisResponse(
+                1L,
+                0,
+                "BAIXA",
+                List.of(),
+                "Manter acompanhamento conforme planejamento atual"
+        ));
+        MockMvc mockMvc = mockMvc(service);
+
+        mockMvc.perform(get("/smartcare/pets/1/analysis"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.petId").value(1))
+                .andExpect(jsonPath("$.score").value(0))
+                .andExpect(jsonPath("$.prioridade").value("BAIXA"))
+                .andExpect(jsonPath("$.motivos").isEmpty())
+                .andExpect(jsonPath("$.recomendacao")
+                        .value("Manter acompanhamento conforme planejamento atual"));
+    }
+
+    @Test
     void shouldReturnUnprocessableEntityWhenPetHasNoClinicalData() throws Exception {
         SmartCareService service = mock(SmartCareService.class);
         when(service.analyze(2L)).thenThrow(

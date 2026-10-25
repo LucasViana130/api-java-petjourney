@@ -171,6 +171,35 @@ class SmartCareServiceTest {
     }
 
     @Test
+    void shouldIncludeLowPriorityAnalysisWithoutReasonsInRanking() {
+        Pet pet = Pet.builder().id(1L).name("Rex").build();
+        SmartCareAnalysisResponse lowPriorityAnalysis = new SmartCareAnalysisResponse(
+                1L,
+                0,
+                "BAIXA",
+                List.of(),
+                "Manter acompanhamento conforme planejamento atual"
+        );
+
+        when(authenticatedUser.role()).thenReturn(UserRole.VETERINARIO);
+        when(petService.findAccessibleClinicalPets()).thenReturn(List.of(pet));
+        when(medicalRecordRepository
+                .findFirstByPetIdAndRegistrationDateLessThanEqualOrderByRegistrationDateDescIdDesc(eq(1L), any()))
+                .thenReturn(Optional.of(recordFor(1L)));
+        when(appointmentRepository.existsValidUpcomingForPet(eq(1L), any(), eq(AppointmentStatus.PENDENTE)))
+                .thenReturn(false);
+        when(medicationRepository.existsByPetIdAndStatusIn(eq(1L), any())).thenReturn(false);
+        when(smartCareClient.analyze(any())).thenReturn(lowPriorityAnalysis);
+
+        SmartCareRankingResponse response = service.ranking();
+
+        assertEquals(1, response.analises().size());
+        assertEquals(0, response.analises().get(0).score());
+        assertEquals("BAIXA", response.analises().get(0).prioridade());
+        assertTrue(response.analises().get(0).motivos().isEmpty());
+    }
+
+    @Test
     void shouldSeparatePetWithoutMedicalRecordWithoutArtificialScore() {
         Pet rex = Pet.builder().id(1L).name("Rex").build();
         Pet mel = Pet.builder().id(2L).name("Mel").build();

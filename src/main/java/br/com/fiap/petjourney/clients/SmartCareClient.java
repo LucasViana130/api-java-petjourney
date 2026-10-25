@@ -52,7 +52,6 @@ public class SmartCareClient {
                 || !StringUtils.hasText(response.prioridade())
                 || !VALID_PRIORITIES.contains(response.prioridade())
                 || response.motivos() == null
-                || response.motivos().isEmpty()
                 || response.motivos().stream().anyMatch(motivo -> !StringUtils.hasText(motivo))
                 || !StringUtils.hasText(response.recomendacao())) {
             throw new SmartCareUnavailableException("SmartCare retornou uma resposta invalida", null);

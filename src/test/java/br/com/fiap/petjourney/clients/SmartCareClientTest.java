@@ -16,6 +16,7 @@ import org.springframework.web.client.RestClient;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -51,6 +52,32 @@ class SmartCareClientTest {
         assertEquals(123L, response.petId());
         assertEquals(Integer.valueOf(100), response.score());
         assertEquals("ALTA", response.prioridade());
+        assertEquals(List.of("Sem consulta há mais de 365 dias"), response.motivos());
+        server.verify();
+    }
+
+    @Test
+    void shouldAcceptLowPriorityResponseWithoutReasons() {
+        RestClient.Builder builder = smartCareBuilder();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        SmartCareClient client = new SmartCareClient(builder.build());
+
+        server.expect(requestTo("http://localhost:8001/smartcare/analisar"))
+                .andRespond(withSuccess("""
+                        {
+                          "petId": 123,
+                          "score": 0,
+                          "prioridade": "BAIXA",
+                          "motivos": [],
+                          "recomendacao": "Manter acompanhamento conforme planejamento atual"
+                        }
+                        """, MediaType.APPLICATION_JSON));
+
+        var response = client.analyze(request());
+
+        assertEquals(Integer.valueOf(0), response.score());
+        assertEquals("BAIXA", response.prioridade());
+        assertEquals(List.of(), response.motivos());
         server.verify();
     }
 
@@ -108,8 +135,27 @@ class SmartCareClientTest {
     }
 
     @Test
-    void shouldRejectMissingRequiredContent() {
-        assertInvalidResponse(validResponse().replace("[\"Motivo de teste\"]", "[]"));
+    void shouldRejectNullReasons() {
+        assertInvalidResponse(validResponse().replace(
+                "[\"Sem consulta há mais de 365 dias\"]",
+                "null"
+        ));
+    }
+
+    @Test
+    void shouldRejectNullReason() {
+        assertInvalidResponse(validResponse().replace(
+                "[\"Sem consulta há mais de 365 dias\"]",
+                "[null]"
+        ));
+    }
+
+    @Test
+    void shouldRejectBlankReason() {
+        assertInvalidResponse(validResponse().replace(
+                "[\"Sem consulta há mais de 365 dias\"]",
+                "[\"  \"]"
+        ));
     }
 
     @Test
@@ -163,7 +209,7 @@ class SmartCareClientTest {
                   "petId": 123,
                   "score": 100,
                   "prioridade": "ALTA",
-                  "motivos": ["Motivo de teste"],
+                  "motivos": ["Sem consulta há mais de 365 dias"],
                   "recomendacao": "Recomendacao de teste"
                 }
                 """;
