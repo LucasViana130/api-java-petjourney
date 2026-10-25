@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -36,31 +37,34 @@ public class ClinicService {
         if (role == UserRole.ADMIN_CLINICA || role == UserRole.VETERINARIO) {
             Clinic clinic = repository.findByIdAndActiveTrue(authenticatedUser.clinicId())
                     .orElseThrow(() -> new ResourceNotFoundException("Clinica autenticada nao encontrada"));
-            return new PageImpl<>(List.of(ClinicResponse.fromEntity(clinic)), pageable, 1);
+            return new PageImpl<>(toResponses(List.of(clinic)), pageable, 1);
         }
         if (role == UserRole.TUTOR) {
-            List<ClinicResponse> clinics = repository.findByTutorId(authenticatedUser.tutorId())
-                    .stream()
-                    .map(ClinicResponse::fromEntity)
-                    .toList();
+            List<ClinicResponse> clinics = toResponses(repository.findByTutorId(authenticatedUser.tutorId()));
             return new PageImpl<>(clinics, pageable, clinics.size());
         }
 
-        return repository.findByActiveTrue(pageable).map(ClinicResponse::fromEntity);
+        Page<Clinic> clinics = repository.findByActiveTrue(pageable);
+        Set<Long> clinicIdsWithAdmin = findClinicIdsWithAdmin(clinics.getContent());
+        return clinics.map(clinic -> ClinicResponse.fromEntity(
+                clinic,
+                clinicIdsWithAdmin.contains(clinic.getId())
+        ));
     }
 
     public ClinicResponse findById(Long id) {
         assertClinicAccess(id);
-        return repository.findByIdAndActiveTrue(id)
-                .map(ClinicResponse::fromEntity)
+        Clinic clinic = repository.findByIdAndActiveTrue(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Clinica nao encontrada"));
+        boolean hasAdmin = userAccountRepository.existsByClinicIdAndRole(id, UserRole.ADMIN_CLINICA);
+        return ClinicResponse.fromEntity(clinic, hasAdmin);
     }
 
     public ClinicResponse create(ClinicRequest request) {
         if (authenticatedUser.role() != UserRole.ADMIN_SISTEMA) {
             throw new ForbiddenOperationException("Apenas administradores do sistema podem cadastrar clinicas");
         }
-        return ClinicResponse.fromEntity(repository.save(new Clinic(request)));
+        return ClinicResponse.fromEntity(repository.save(new Clinic(request)), false);
     }
 
     public ClinicResponse update(Long id, ClinicRequest request) {
@@ -71,7 +75,8 @@ public class ClinicService {
 
         clinic.updateFrom(request);
 
-        return ClinicResponse.fromEntity(repository.save(clinic));
+        boolean hasAdmin = userAccountRepository.existsByClinicIdAndRole(id, UserRole.ADMIN_CLINICA);
+        return ClinicResponse.fromEntity(repository.save(clinic), hasAdmin);
     }
 
     @Transactional
@@ -102,6 +107,27 @@ public class ClinicService {
         if (role == UserRole.TUTOR && !clinicId.equals(authenticatedUser.clinicId())) {
             throw new ForbiddenOperationException("Tutor nao pode acessar clinica sem vinculo");
         }
+    }
+
+    private List<ClinicResponse> toResponses(List<Clinic> clinics) {
+        Set<Long> clinicIdsWithAdmin = findClinicIdsWithAdmin(clinics);
+        return clinics.stream()
+                .map(clinic -> ClinicResponse.fromEntity(
+                        clinic,
+                        clinicIdsWithAdmin.contains(clinic.getId())
+                ))
+                .toList();
+    }
+
+    private Set<Long> findClinicIdsWithAdmin(List<Clinic> clinics) {
+        if (clinics.isEmpty()) {
+            return Set.of();
+        }
+
+        List<Long> clinicIds = clinics.stream()
+                .map(Clinic::getId)
+                .toList();
+        return userAccountRepository.findClinicIdsByRole(clinicIds, UserRole.ADMIN_CLINICA);
     }
 
     private void assertSystemAdmin() {

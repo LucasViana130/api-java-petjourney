@@ -209,6 +209,9 @@ public class GlobalExceptionHandler {
         if (rootMessage.contains("tb_usuario_username_key")) {
             return "Ja existe usuario cadastrado com este e-mail";
         }
+        if (rootMessage.contains("uk_tb_usuario_clinic_id")) {
+            return "Esta clínica já possui um administrador.";
+        }
         if (rootMessage.contains("tb_clinica_cnpj_key")) {
             return "Ja existe clinica cadastrada com este CNPJ";
         }

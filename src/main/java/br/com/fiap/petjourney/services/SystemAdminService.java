@@ -2,6 +2,7 @@ package br.com.fiap.petjourney.services;
 
 import br.com.fiap.petjourney.dtos.request.CreateClinicAdminRequest;
 import br.com.fiap.petjourney.dtos.response.UserAccountResponse;
+import br.com.fiap.petjourney.exceptions.ConflictOperationException;
 import br.com.fiap.petjourney.exceptions.ForbiddenOperationException;
 import br.com.fiap.petjourney.exceptions.ResourceNotFoundException;
 import br.com.fiap.petjourney.models.UserAccount;
@@ -11,6 +12,7 @@ import br.com.fiap.petjourney.repositories.UserAccountRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -21,19 +23,23 @@ public class SystemAdminService {
     private final AuthenticatedUserService authenticatedUser;
     private final PasswordEncoder passwordEncoder;
 
+    @Transactional
     public UserAccountResponse createClinicAdmin(Long clinicId, CreateClinicAdminRequest request) {
         if (authenticatedUser.role() != UserRole.ADMIN_SISTEMA) {
             throw new ForbiddenOperationException("Apenas administradores do sistema podem criar administradores de clínica");
         }
 
-        String username = normalizeUsername(request.username());
+        var clinic = clinicRepository.findByIdAndActiveTrue(clinicId)
+                .orElseThrow(() -> new ResourceNotFoundException("Clínica não encontrada"));
 
+        if (userAccountRepository.existsByClinicIdAndRole(clinicId, UserRole.ADMIN_CLINICA)) {
+            throw new ConflictOperationException("Esta clínica já possui um administrador.");
+        }
+
+        String username = normalizeUsername(request.username());
         if (userAccountRepository.existsByUsername(username)) {
             throw new ForbiddenOperationException("Já existe usuário cadastrado com este e-mail");
         }
-
-        var clinic = clinicRepository.findByIdAndActiveTrue(clinicId)
-                .orElseThrow(() -> new ResourceNotFoundException("Clínica não encontrada"));
 
         var user = UserAccount.builder()
                 .username(username)

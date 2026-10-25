@@ -18,8 +18,9 @@ public class ClinicResponse extends RepresentationModel<ClinicResponse> {
     private String phone;
     private String email;
     private String address;
+    private boolean hasAdmin;
 
-    public static ClinicResponse fromEntity(Clinic clinic) {
+    public static ClinicResponse fromEntity(Clinic clinic, boolean hasAdmin) {
         return ClinicResponse.builder()
                 .id(clinic.getId())
                 .name(clinic.getName())
@@ -27,6 +28,7 @@ public class ClinicResponse extends RepresentationModel<ClinicResponse> {
                 .phone(clinic.getPhone())
                 .email(clinic.getEmail())
                 .address(clinic.getAddress())
+                .hasAdmin(hasAdmin)
                 .build();
     }
 }
