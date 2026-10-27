@@ -47,10 +47,10 @@ Veja [evidências e validação](docs/evidencias/README.md) e o [roteiro Postman
 
 | Item | Link |
 |---|---|
-| Video Youtube | https://www.youtube.com/watch?v=gfT_4wNRK2c |
+| Video Youtube |  |
 | Repositório GitHub | https://github.com/LucasViana130/api-java-petjourney.git |
 | Repositório Front End | https://github.com/deryksouza2006/PetJourney2.0.git |
-| Deploy Railway | https://api-java-petjourney-production.up.railway.app |
+| Deploy Railway |  |
 
 ## Tecnologias
 
