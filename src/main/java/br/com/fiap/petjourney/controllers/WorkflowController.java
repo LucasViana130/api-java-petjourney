@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/workflows")
 @RequiredArgsConstructor
-@Tag(name = "Fluxos da Sprint 3", description = "Fluxos completos de agendamento e consulta")
+@Tag(name = "Fluxos clinicos", description = "Cadastro de tutor com pet, agendamento e consulta completa")
 public class WorkflowController {
 
     private final AppointmentService appointmentService;

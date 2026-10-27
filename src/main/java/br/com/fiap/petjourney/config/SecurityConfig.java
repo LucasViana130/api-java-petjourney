@@ -20,6 +20,8 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
+import org.springframework.security.oauth2.jwt.JwtValidators;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
@@ -82,10 +84,15 @@ public class SecurityConfig {
     }
 
     @Bean
-    JwtDecoder jwtDecoder(RsaKeyProperties rsaKeyProperties, ResourceLoader resourceLoader) {
-        return NimbusJwtDecoder
+    JwtDecoder jwtDecoder(RsaKeyProperties rsaKeyProperties, ResourceLoader resourceLoader,
+                          ActiveAccountTokenValidator activeAccountTokenValidator) {
+        NimbusJwtDecoder decoder = NimbusJwtDecoder
                 .withPublicKey(readPublicKey(rsaKeyProperties, resourceLoader))
                 .build();
+        decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(
+                JwtValidators.createDefault(), activeAccountTokenValidator
+        ));
+        return decoder;
     }
 
     @Bean
