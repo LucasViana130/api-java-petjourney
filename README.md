@@ -2,6 +2,26 @@
 
 API Java Spring Boot para gestao clinica veterinaria, autenticacao por JWT RSA, cadastro de clinicas, veterinarios, tutores, pets, consultas, prontuarios, medicamentos, primeiro acesso por e-mail, relatorio de consulta em PDF, relatorios consolidados por procedures PostgreSQL e integracao SmartCare com servico Python/FastAPI.
 
+## Integrantes
+
+| Nome | RM |
+|---|---|
+| Lucas Gonçalves Viana | 563254 |
+| Deryk de Souza Queiroz | 563412 |
+| Vinicius Paschoeto da Silva | 563089 |
+| Felipe Wiclif Leal da Silva| 563901 |
+
+---
+
+## Links da entrega
+
+| Item | Link |
+|---|---|
+| Video Youtube |  |
+| Repositório GitHub | https://github.com/LucasViana130/api-java-petjourney.git |
+| Repositório Front End | https://github.com/deryksouza2006/PetJourney2.0.git |
+| Deploy Railway |  |
+
 ## Proposta e decisões de implementação
 
 O PetJourney organiza a rotina de clínicas veterinárias: cadastro de clientes e pets, agenda, atendimento, prescrições e acesso do tutor ao histórico. O SmartCare prioriza acompanhamento a partir dos fatos clínicos; não é um diagnóstico veterinário.
@@ -44,26 +64,6 @@ Ao receber uma solicitação de análise, o Java valida o acesso ao pet e consul
 O SmartCare calcula o score e devolve prioridade, motivos e recomendação. O Java valida a resposta e a entrega ao aplicativo; no ranking, ordena as análises por score decrescente e separa os pets sem dados suficientes. O front acessa essa funcionalidade pelos endpoints Java `/smartcare/pets/{petId}/analysis` e `/smartcare/ranking`.
 
 O PostgreSQL é acessado pelo Java; o aplicativo e o serviço de IA não precisam de conexão direta com o banco. A análise não altera o histórico clínico nem persiste o score. Na consulta individual, a ausência de prontuário válido retorna `422`; indisponibilidade, timeout ou resposta inválida do Python retornam `503`, para que a interface apresente a situação ao usuário.
-
-## Integrantes
-
-| Nome | RM |
-|---|---|
-| Lucas Gonçalves Viana | 563254 |
-| Deryk de Souza Queiroz | 563412 |
-| Vinicius Paschoeto da Silva | 563089 |
-| Felipe Wiclif Leal da Silva| 563901 |
-
----
-
-## Links da entrega
-
-| Item | Link |
-|---|---|
-| Video Youtube |  |
-| Repositório GitHub | https://github.com/LucasViana130/api-java-petjourney.git |
-| Repositório Front End | https://github.com/deryksouza2006/PetJourney2.0.git |
-| Deploy Railway |  |
 
 ## Tecnologias
 
