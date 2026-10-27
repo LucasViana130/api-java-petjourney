@@ -21,17 +21,6 @@ flowchart LR
 - Uma clínica possui um único administrador. `ClinicResponse.hasAdmin` permite ao aplicativo refletir essa condição; a API e o índice único do banco também impedem duplicação.
 - Relatórios chamam procedures e recebem JSON estruturado. O Python calcula o SmartCare sem acessar diretamente o banco.
 
-## Roteiro de demonstração e evidências
-
-1. Apresentar o problema, a arquitetura e as decisões do grupo.
-2. Mostrar administrador do sistema criando clínica e seu administrador; explicar `hasAdmin` e o conflito de duplicação.
-3. Cadastrar tutor e pet, ativar acesso e criar disponibilidade/agendamento futuro.
-4. Registrar atendimento com medicamento e abrir relatório JSON/PDF e histórico do tutor.
-5. Demonstrar relatórios da clínica, isolamento e SmartCare com o serviço Python real.
-6. Demonstrar erros controlados e inativação bloqueando a sessão anterior.
-
-Veja [evidências e validação](docs/evidencias/README.md) e o [roteiro Postman](docs/postman/README.md). O vídeo final deve respeitar os 15 minutos da disciplina Java, incluir todos os integrantes e mostrar os fluxos na aplicação publicada. UI/UX e colaboração também fazem parte da avaliação; a suíte do backend não comprova esses itens sozinha.
-
 ## Integrantes
 
 | Nome | RM |
