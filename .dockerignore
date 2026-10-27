@@ -1,0 +1,15 @@
+.git
+.github
+.idea
+.vscode
+.env
+.env.*
+!.env.example
+target
+tmp
+output
+*.log
+*.key
+*.pem
+src/main/resources/app.pub
+src/main/resources/app.key
