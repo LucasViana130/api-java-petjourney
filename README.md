@@ -21,6 +21,30 @@ flowchart LR
 - Uma clínica possui um único administrador. `ClinicResponse.hasAdmin` permite ao aplicativo refletir essa condição; a API e o índice único do banco também impedem duplicação.
 - Relatórios chamam procedures e recebem JSON estruturado. O Python calcula o SmartCare sem acessar diretamente o banco.
 
+## Integração do sistema: front, banco e IA
+
+A API Java centraliza a comunicação do PetJourney. O aplicativo React Native envia requisições HTTP com JSON para a API, que verifica a autenticação e as permissões antes de consultar o PostgreSQL ou solicitar uma análise ao SmartCare.
+
+### Front e API Java
+
+O aplicativo aponta sua `EXPO_PUBLIC_API_URL` para o endereço da API. Após o login em `POST /auth/login`, utiliza o JWT retornado no cabeçalho `Authorization: Bearer <token>` das requisições protegidas. O Java identifica o perfil e a clínica pelo token e verifica se a conta permanece ativa.
+
+Cadastros, agenda, prontuários e medicamentos passam pelos endpoints Java. O front apresenta as respostas e os erros de negócio, respeitando os contratos: listagens paginadas usam `content`, relatórios retornam arrays e o ranking SmartCare retorna `analises` e `semDadosSuficientes`. Ao cadastrar ou atualizar informações, o aplicativo deve atualizar as consultas correspondentes para apresentar o estado salvo no servidor.
+
+### API Java e PostgreSQL
+
+O Java acessa o banco configurado por `DB_URL`, `DB_USERNAME` e `DB_PASSWORD`. O JPA realiza as operações dos cadastros e do atendimento; os relatórios utilizam JDBC com parâmetros vinculados para chamar as procedures PostgreSQL. O Flyway controla a evolução do esquema pelas migrations, e o Hibernate valida a compatibilidade entre as entidades Java e as tabelas.
+
+Assim, os dados cadastrados pelo aplicativo são os mesmos utilizados nos relatórios e na coleta de fatos para o SmartCare. O fluxo de consulta completa grava prontuário, medicamentos e conclusão do agendamento em uma transação. As regras de acesso da API e as restrições do banco protegem a consistência dos registros e o isolamento entre clínicas.
+
+### API Java e SmartCare
+
+Ao receber uma solicitação de análise, o Java valida o acesso ao pet e consulta seu histórico no PostgreSQL. Em seguida, envia `petId`, `dataUltimoAtendimento`, `possuiProximoAgendamento` e `possuiTratamentoRegistrado` para `POST /smartcare/analisar`, no serviço Python/FastAPI configurado por `SMARTCARE_BASE_URL`.
+
+O SmartCare calcula o score e devolve prioridade, motivos e recomendação. O Java valida a resposta e a entrega ao aplicativo; no ranking, ordena as análises por score decrescente e separa os pets sem dados suficientes. O front acessa essa funcionalidade pelos endpoints Java `/smartcare/pets/{petId}/analysis` e `/smartcare/ranking`.
+
+O PostgreSQL é acessado pelo Java; o aplicativo e o serviço de IA não precisam de conexão direta com o banco. A análise não altera o histórico clínico nem persiste o score. Na consulta individual, a ausência de prontuário válido retorna `422`; indisponibilidade, timeout ou resposta inválida do Python retornam `503`, para que a interface apresente a situação ao usuário.
+
 ## Integrantes
 
 | Nome | RM |
@@ -569,7 +593,31 @@ Depois de fazer login em `POST /auth/login`, clique em `Authorize` e informe:
 Bearer SEU_TOKEN
 ```
 
-## Testes automatizados
+## QA e testes de qualidade
+
+A validação combina testes automatizados do backend, verificações HTTP com PostgreSQL real e cenários manuais pelo Postman. Cada camada verifica uma parte da integração:
+
+| Camada | Como é testada | O que verifica |
+|---|---|---|
+| Regras e segurança | JUnit 5 e Mockito | Perfis, clínica autenticada, administrador único, construção dos fatos SmartCare e bloqueio de tokens de contas inativadas. |
+| Contratos HTTP | MockMvc e MockRestServiceServer | Respostas dos controllers, comunicação com o SmartCare, tratamento de falhas e validação da resposta externa. |
+| Persistência e API em execução | JAR conectado a PostgreSQL isolado | Migrations, validação do esquema, relatórios por procedures, fluxos clínicos e isolamento entre clínicas. |
+| Cenários manuais | Collection Postman | Login, cadastros, primeiro acesso, agenda, atendimento, relatórios, permissões e SmartCare, conforme as pré-condições de cada cenário. |
+| Fluxo completo com front e IA | Aplicativo, Java, PostgreSQL e Python real em execução | Exibição e atualização dos dados, navegação por perfil e resultado real do SmartCare. |
+
+Na validação local registrada em 27/10/2026, `mvn verify` concluiu o build com **54 testes aprovados**, sem falhas ou erros. Também passaram **31 verificações HTTP** com a API e o PostgreSQL locais, incluindo isolamento entre clínicas, relatórios, falhas do SmartCare e recusa de tokens após inativação.
+
+Os resultados `200` de análise e ranking nessa rodada utilizaram um servidor HTTP simulado para validar o contrato de comunicação. A execução do Python real e o fluxo completo pelo aplicativo permanecem como validações separadas. A collection teve seu JSON e a sintaxe dos scripts conferidos, mas não foi executada integralmente pelo Runner do Postman.
+
+Para repetir os testes automatizados e gerar o JAR:
+
+```powershell
+mvn verify
+```
+
+Para a validação integrada, use um banco de teste, execute os cenários do [roteiro Postman](docs/postman/README.md) e repita os fluxos pelo aplicativo com o Python real. Confira tanto o caminho de sucesso quanto as respostas `401` sem autenticação, `403` por perfil não autorizado, `422` por dados insuficientes e `503` por indisponibilidade do SmartCare. Verifique também que uma clínica não acessa dados de outra e que uma conta inativada perde o acesso mesmo com um token emitido anteriormente.
+
+### Testes automatizados
 
 Execute:
 
