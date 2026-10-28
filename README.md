@@ -21,7 +21,9 @@ API Java Spring Boot para gestao clinica veterinaria, autenticacao por JWT RSA, 
 | Repositório GitHub | https://github.com/LucasViana130/api-java-petjourney.git |
 | Repositório Front End | https://github.com/deryksouza2006/PetJourney2.0.git |
 | Repositório IA/IOT | https://github.com/deryksouza2006/SmartCare.git |
-| Deploy Render | Em configuracao |
+| Deploy API Java | https://petjourney-api.onrender.com |
+| Deploy SmartCare | https://petjourney-smartcare.onrender.com |
+| PostgreSQL no Render | https://dashboard.render.com/d/dpg-dbgi26ui0phs73for0tg-a |
 
 ## Proposta e decisões de implementação
 
@@ -467,9 +469,9 @@ BREVO_TIMEOUT_MS=10000
 Configure um endereço do serviço Python acessível a partir da API Java. `localhost` só funciona se ambos estiverem no mesmo ambiente de rede/processamento.
 
 ```properties
-SMARTCARE_BASE_URL=https://HOST_REAL_DO_SMARTCARE
-SMARTCARE_CONNECT_TIMEOUT=2s
-SMARTCARE_READ_TIMEOUT=5s
+SMARTCARE_BASE_URL=https://petjourney-smartcare.onrender.com
+SMARTCARE_CONNECT_TIMEOUT=10s
+SMARTCARE_READ_TIMEOUT=60s
 ```
 
 Configuracao na Brevo:
@@ -515,8 +517,8 @@ Started PetJourneyApplication
 Teste:
 
 ```text
-https://URL_DA_API.onrender.com/swagger-ui.html
-POST https://URL_DA_API.onrender.com/auth/login
+https://petjourney-api.onrender.com/swagger-ui.html
+POST https://petjourney-api.onrender.com/auth/login
 ```
 
 Nao acrescente `:8080` nem `:10000` a URL publica. O Render encaminha o trafego HTTPS para a porta definida em `PORT`.
@@ -574,7 +576,7 @@ A collection cobre:
 Para testar pelo Swagger no Render, abra:
 
 ```text
-https://URL_DA_API.onrender.com/swagger-ui.html
+https://petjourney-api.onrender.com/swagger-ui.html
 ```
 
 Depois de fazer login em `POST /auth/login`, clique em `Authorize` e informe:
