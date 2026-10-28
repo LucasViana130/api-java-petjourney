@@ -1,7 +1,3 @@
-# Validação local - 27/10/2026
-
-Base de código: commit 68a5b44 acrescido da correção de autenticação e documentação desta entrega. Testes executados com Java 17.0.19, Spring Boot 3.4.0 e PostgreSQL 16.13. Banco exclusivo de auditoria; nenhuma chamada de escrita em produção.
-
 ## Build e testes
 
 `mvn verify`: BUILD SUCCESS. 54 testes, zero falhas, zero erros e nenhum ignorado. JAR gerado. Os testes de serviços/repositories utilizam mocks e os testes de controllers utilizam MockMvc; isso não é um teste completo do banco.
@@ -33,12 +29,6 @@ Base de código: commit 68a5b44 acrescido da correção de autenticação e docu
 - Token de veterinário recusado com 401 após inativação, inclusive em rota consultada anteriormente.
 - Token de administrador da clínica recusado com 401 após inativação da clínica.
 
-Na revisão anterior à correção também foram executados disponibilidade, agendamento, atendimento com medicamento, PDF, cadastro de administrador e conflito do segundo administrador. A correção preserva esses serviços; os arquivos de migration não mudaram.
-
-## Collection
-
-JSON carregado e scripts JavaScript verificados quanto à sintaxe. Endpoints novos conferidos com os contratos Java. Não foi executado um Runner completo do Postman/Newman: a collection contém cenários alternativos e pré-condições descritas no roteiro.
-
 ## Migrations
 
 V1–V10 preservadas byte a byte em relação à base anterior. Hashes SHA-256:
@@ -55,13 +45,3 @@ V1–V10 preservadas byte a byte em relação à base anterior. Hashes SHA-256:
 | V7__add_soft_delete_flags.sql | `3ec27fa4d7c677f4821d493749cfead580861f8817065c8a45f68da00d0eeceb` |
 | V8__petjourney_objetos_tecnicos.sql | `17de2f2260c7e501f4e68e63d6b4e6e327385703bcd586d67879624f09cde39e` |
 | V9__petjourney_integridade_e_gatilhos.sql | `6a08bcadb0ffaf83a27a00b9234ae8ac80ced75b3cb0ab5f680cad9ce33f7032` |
-
-## Pendente antes da entrega final
-
-- Executar SmartCare com Python real e repetir pelo aplicativo.
-- Validar UI/UX, conta de outra clínica e atualização dos dados no front.
-- Publicar a aplicação e confirmar os endereços efetivos.
-- Registrar vídeo de até 15 minutos com todos os integrantes e adicionar evidências reais de colaboração.
-- Conferir a collection no Postman no ambiente final, seguindo o roteiro e sem executar todos os cenários alternativos de uma vez.
-
-Não há garantia de funcionamento de serviços externos que não foram executados nesta validação.
