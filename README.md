@@ -21,9 +21,10 @@ API Java Spring Boot para gestao clinica veterinaria, autenticacao por JWT RSA, 
 | Repositório GitHub | https://github.com/LucasViana130/api-java-petjourney.git |
 | Repositório Front End | https://github.com/deryksouza2006/PetJourney2.0.git |
 | Repositório IA/IOT | https://github.com/deryksouza2006/SmartCare.git |
-| Deploy API Java | https://petjourney-api.onrender.com |
-| Deploy SmartCare | https://petjourney-smartcare.onrender.com |
-| PostgreSQL no Render | https://dashboard.render.com/d/dpg-dbgi26ui0phs73for0tg-a |
+| Deploy API Java — Swagger | [Abrir documentação da API](https://petjourney-api.onrender.com/swagger-ui.html) |
+| Deploy SmartCare — Swagger | [Abrir documentação do SmartCare](https://petjourney-smartcare.onrender.com/docs) |
+| Health Check SmartCare | [Verificar disponibilidade](https://petjourney-smartcare.onrender.com/health) |
+| PostgreSQL no Render | [Abrir painel privado](https://dashboard.render.com/d/dpg-dbgi26ui0phs73for0tg-a) — requer acesso à conta proprietária |
 
 ## Proposta e decisões de implementação
 
