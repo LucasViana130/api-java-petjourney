@@ -21,7 +21,7 @@ API Java Spring Boot para gestao clinica veterinaria, autenticacao por JWT RSA, 
 | Repositório GitHub | https://github.com/LucasViana130/api-java-petjourney.git |
 | Repositório Front End | https://github.com/deryksouza2006/PetJourney2.0.git |
 | Repositório IA/IOT | https://github.com/deryksouza2006/SmartCare.git |
-| Deploy Railway |  |
+| Deploy Render | Em configuracao |
 
 ## Proposta e decisões de implementação
 
@@ -86,7 +86,7 @@ O PostgreSQL é acessado pelo Java; o aplicativo e o serviço de IA não precisa
 - OpenPDF
 - JUnit 5, Mockito e testes HTTP com MockMvc/MockRestServiceServer
 - Docker Compose para PostgreSQL local
-- Railway para deploy
+- Render para deploy da API, do SmartCare e do PostgreSQL
 
 ## Funcionalidades principais
 
@@ -400,49 +400,43 @@ Swagger: http://localhost:8080/swagger-ui.html
 OpenAPI JSON: http://localhost:8080/api-docs
 ```
 
-## Deploy no Railway
+## Deploy no Render
 
-O repositorio esta preparado para Railway com `railway.toml`.
+O repositorio esta preparado para ser publicado como um Web Service Docker no Render. O `Dockerfile` compila a aplicacao com Maven e inicia o JAR com limites de memoria adequados ao plano gratuito. A porta e recebida pela variavel `PORT`, ja suportada em `application.properties`.
 
-O Railway executa:
+### 1. Criar os servicos
 
-```text
-mvn -DskipTests package
-java -Xms64m -Xmx256m -XX:MaxMetaspaceSize=160m -XX:ReservedCodeCacheSize=64m -XX:+UseSerialGC -Xss512k -Djava.net.preferIPv4Stack=true -Djava.net.preferIPv4Addresses=true -Dspring.jmx.enabled=false -jar target/petjourney-0.0.1-SNAPSHOT.jar
-```
+1. Crie um projeto e um ambiente de producao no Render.
+2. Adicione um PostgreSQL e anote o host interno, a porta, o banco, o usuario e a senha.
+3. Publique o SmartCare como Web Service e confirme que `GET /health` responde com sucesso.
+4. Adicione esta API como Web Service a partir do repositorio GitHub.
+5. Selecione `Docker`, informe `./Dockerfile` e escolha o plano desejado.
 
-### 1. Criar servicos
-
-1. Crie um projeto no Railway.
-2. Adicione um servico PostgreSQL.
-3. Adicione um servico para a API usando `Deploy from GitHub repo`.
-4. Gere um dominio publico em `Settings -> Networking` no servico da API.
+Ao conectar um repositorio por URL publica, novos commits podem exigir um deploy manual no Dashboard do Render.
 
 ### 2. Variaveis obrigatorias da API
 
-Configure no servico da API, nao no Postgres:
+Configure estas variaveis no Web Service da API Java:
 
 ```properties
-DB_URL=jdbc:postgresql://HOST_DO_POSTGRES:PORTA_DO_POSTGRES/NOME_DO_BANCO
+DB_URL=jdbc:postgresql://HOST_INTERNO_DO_POSTGRES:5432/NOME_DO_BANCO
 DB_USERNAME=USUARIO_DO_POSTGRES
 DB_PASSWORD=SENHA_DO_POSTGRES
 JWT_ISSUER=petjourney-api
 JWT_EXPIRATION_MINUTES=60
 RSA_PRIVATE_KEY=conteudo_completo_da_chave_privada_pem
 RSA_PUBLIC_KEY=conteudo_completo_da_chave_publica_pem
+SMARTCARE_BASE_URL=https://petjourney-smartcare.onrender.com
+SMARTCARE_CONNECT_TIMEOUT=10s
+SMARTCARE_READ_TIMEOUT=60s
+MAIL_ENABLED=false
 ```
 
-Para montar `DB_URL`, copie do servico PostgreSQL do Railway:
+Use o host interno do PostgreSQL quando o banco e a API estiverem na mesma regiao e no mesmo ambiente do Render. Nao use `localhost`: dentro do container, esse endereco aponta para a propria API.
 
-```text
-DB_URL=jdbc:postgresql://PGHOST:PGPORT/PGDATABASE
-DB_USERNAME=PGUSER
-DB_PASSWORD=PGPASSWORD
-```
+No plano gratuito, o SmartCare pode suspender por inatividade. Os timeouts maiores acima permitem que a primeira chamada aguarde a inicializacao do servico.
 
-Nao use `localhost` no Railway. Dentro do container, `localhost` aponta para a propria API, nao para o banco.
-
-### 3. Chaves RSA no Railway
+### 3. Chaves RSA no Render
 
 Copie localmente:
 
@@ -451,16 +445,11 @@ Get-Content -Raw src/main/resources/app.key
 Get-Content -Raw src/main/resources/app.pub
 ```
 
-Cole o conteudo completo da chave privada em `RSA_PRIVATE_KEY` e da chave publica em `RSA_PUBLIC_KEY`, incluindo cabecalho e rodape do PEM.
+Cadastre o conteudo completo da chave privada como secret `RSA_PRIVATE_KEY` e o da chave publica como `RSA_PUBLIC_KEY`, incluindo cabecalho e rodape do PEM. Se o campo nao aceitar multiplas linhas, substitua as quebras por `\n`; o backend aceita os dois formatos.
 
-```properties
-RSA_PRIVATE_KEY=<conteudo_completo_da_chave_privada_pem>
-RSA_PUBLIC_KEY=<conteudo_completo_da_chave_publica_pem>
-```
+Nunca envie as chaves reais ao GitHub nem as inclua no README.
 
-Se o Railway nao aceitar multiplas linhas, substitua as quebras por `\n`. O backend aceita os dois formatos.
-
-### 4. E-mail real no Railway
+### 4. E-mail real no Render
 
 Em producao, o envio de e-mail usa Brevo pela API HTTP transacional.
 
@@ -488,7 +477,7 @@ Configuracao na Brevo:
 1. Crie uma conta em `brevo.com`.
 2. Valide seu proprio e-mail como remetente.
 3. Crie uma API key em `SMTP & API`.
-4. Configure `BREVO_API_KEY` no Railway.
+4. Configure `BREVO_API_KEY` como secret no Web Service da API no Render.
 5. Configure `MAIL_FROM` com o mesmo e-mail remetente validado.
 
 SMTP continua suportado para teste local:
@@ -511,7 +500,7 @@ MAIL_SMTP_WRITE_TIMEOUT=5000
 
 Se `MAIL_ENABLED=false`, o backend apenas registra o e-mail no log.
 
-### 5. Conferir deploy
+### 5. Conferir o deploy
 
 O log esperado deve conter:
 
@@ -526,13 +515,13 @@ Started PetJourneyApplication
 Teste:
 
 ```text
-https://api-java-petjourney-production.up.railway.app/swagger-ui.html
-POST https://api-java-petjourney-production.up.railway.app/auth/login
+https://URL_DA_API.onrender.com/swagger-ui.html
+POST https://URL_DA_API.onrender.com/auth/login
 ```
 
-Nao use `:8080` na URL publica. O Railway roteia a porta automaticamente.
+Nao acrescente `:8080` nem `:10000` a URL publica. O Render encaminha o trafego HTTPS para a porta definida em `PORT`.
 
-Se o dominio publico retornar `502`, confira primeiro os logs do ultimo deploy. A API precisa terminar com `Started PetJourneyApplication`. Se aparecer aviso de falta de memoria ou o processo reiniciar apos subir, mantenha os limites de memoria do `railway.toml` e evite habilitar `JPA_SHOW_SQL=true` em producao.
+Se o dominio publico retornar erro, confira os logs do ultimo deploy. A API precisa terminar com `Started PetJourneyApplication`. Se o processo reiniciar por falta de memoria, preserve os limites de `JAVA_TOOL_OPTIONS` do `Dockerfile` e evite habilitar `JPA_SHOW_SQL=true` em producao.
 
 ## Testes pelo Postman
 
@@ -563,7 +552,7 @@ Fluxo recomendado:
 
 Para testar recebimento real de e-mail, altere a variavel da collection `testEmailRecipient` para um e-mail seu antes de rodar o login. Com Gmail, a collection gera aliases unicos como `seuemail+tutor.123@gmail.com` e `seuemail+vet.123@gmail.com`; eles chegam na mesma caixa de entrada e evitam conflito de e-mail no banco.
 
-Ao rodar uma nova bateria de testes no Postman, execute novamente `00 - Auth > Login ADMIN_CLINICA`. Essa request gera uma nova rodada de dados dinamicos (`runId`, CPFs e e-mails de teste), reduzindo colisao com registros ja criados no Railway.
+Ao rodar uma nova bateria de testes no Postman, execute novamente `00 - Auth > Login ADMIN_CLINICA`. Essa request gera uma nova rodada de dados dinamicos (`runId`, CPFs e e-mails de teste), reduzindo colisao com registros ja criados no ambiente publicado.
 
 Se receber `409 Conflict` em cadastro de tutor:
 
@@ -582,10 +571,10 @@ A collection cobre:
 - Agendamentos, cancelamento, conclusao e relatorios.
 - Prontuarios, medicamentos e workflows completos.
 
-Para testar pelo Swagger no Railway, abra:
+Para testar pelo Swagger no Render, abra:
 
 ```text
-https://api-java-petjourney-production.up.railway.app/swagger-ui.html
+https://URL_DA_API.onrender.com/swagger-ui.html
 ```
 
 Depois de fazer login em `POST /auth/login`, clique em `Authorize` e informe:
@@ -717,7 +706,7 @@ DB_USERNAME=postgres
 DB_PASSWORD=postgres
 ```
 
-No Railway tambem e possivel usar `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER` e `PGPASSWORD`, mas `DB_URL`, `DB_USERNAME` e `DB_PASSWORD` sao mais explicitos.
+No Render, use preferencialmente `DB_URL`, `DB_USERNAME` e `DB_PASSWORD`, montados com os dados da conexao interna do PostgreSQL.
 
 ### JWT RSA
 
