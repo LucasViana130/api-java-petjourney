@@ -53,7 +53,7 @@ A API Java centraliza a comunicação do PetJourney. O aplicativo React Native e
 
 O aplicativo aponta sua `EXPO_PUBLIC_API_URL` para o endereço da API. Após o login em `POST /auth/login`, utiliza o JWT retornado no cabeçalho `Authorization: Bearer <token>` das requisições protegidas. O Java identifica o perfil e a clínica pelo token e verifica se a conta permanece ativa.
 
-Cadastros, agenda, prontuários e medicamentos passam pelos endpoints Java. O front apresenta as respostas e os erros de negócio, respeitando os contratos: listagens paginadas usam `content`, relatórios retornam arrays e o ranking SmartCare retorna `analises` e `semDadosSuficientes`. Ao cadastrar ou atualizar informações, o aplicativo deve atualizar as consultas correspondentes para apresentar o estado salvo no servidor.
+Cadastros, agenda, prontuários e medicamentos passam pelos endpoints Java. O front apresenta as respostas e os erros de negócio desses fluxos, respeitando os contratos: listagens paginadas usam `content`, e o ranking SmartCare retorna `analises` e `semDadosSuficientes`. Os relatórios administrativos são disponibilizados exclusivamente pela API, retornam arrays JSON e são demonstrados via Postman. Ao cadastrar ou atualizar informações, o aplicativo deve atualizar as consultas correspondentes para apresentar o estado salvo no servidor.
 
 ### API Java e PostgreSQL
 
