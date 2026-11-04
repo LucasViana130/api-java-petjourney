@@ -26,6 +26,18 @@ API Java Spring Boot para gestao clinica veterinaria, autenticacao por JWT RSA, 
 | Health Check SmartCare | [Verificar disponibilidade](https://petjourney-smartcare.onrender.com/health) |
 | PostgreSQL no Render | [Abrir painel privado](https://dashboard.render.com/d/dpg-dbgi26ui0phs73for0tg-a) — requer acesso à conta proprietária |
 
+## Rastreabilidade da entrega final
+
+| Critério da disciplina | Evidência neste projeto |
+|---|---|
+| Demonstração técnica | API publicada no Render, Swagger, aplicativo mobile, collection Postman, fluxos de autenticação, cadastros, agenda, atendimento, relatórios e SmartCare. |
+| Narrativa da solução | A seção **Proposta e decisões de implementação** explica o problema, a arquitetura e as principais decisões técnicas. |
+| Integração multidisciplinar | Mobile React Native, API Java, PostgreSQL/Flyway e SmartCare Python/FastAPI funcionam como um único fluxo. |
+| Organização e documentação | Este README reúne execução local, deploy, variáveis, usuários de demonstração, segurança, testes e links dos entregáveis. |
+| Apresentação | O vídeo da tabela acima demonstra a solução publicada. Para obter a pontuação integral da parte oral, todos os integrantes devem aparecer ou participar da explicação. |
+
+> Os relatórios administrativos não possuem tela no aplicativo. Eles são recursos da API e devem ser demonstrados pelo Postman, conforme a seção [Testes pelo Postman](#testes-pelo-postman).
+
 ## Proposta e decisões de implementação
 
 O PetJourney organiza a rotina de clínicas veterinárias: cadastro de clientes e pets, agenda, atendimento, prescrições e acesso do tutor ao histórico. O SmartCare prioriza acompanhamento a partir dos fatos clínicos; não é um diagnóstico veterinário.
